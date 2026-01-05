@@ -517,3 +517,36 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+# --- 收藏功能视图 ---
+@login_required
+def add_to_favorites(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        messages.info(request, "This product is already in your favorites.")
+    else:
+        messages.success(request, "Added to your favorites!")
+    return redirect('product', product_id=product_id)
+
+@login_required
+def remove_from_favorites(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    Favorite.objects.filter(user=request.user, product=product).delete()
+    messages.success(request, "Removed from your favorites.")
+    return redirect('product', product_id=product_id)
+
+@login_required
+def favorites_view(request):
+    user_favorites = Favorite.objects.filter(user=request.user).select_related('product')
+    context = {
+        'favorites': user_favorites
+    }
+    return render(request, 'favorites.html', context)
+
+@login_required
+def remove_from_favorites_list(request, favorite_id):
+    favorite = get_object_or_404(Favorite, id=favorite_id, user=request.user)
+    favorite.delete()
+    messages.success(request, "Removed from your favorites.")
+    return redirect('favorites')

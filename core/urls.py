@@ -9,7 +9,8 @@ from .views import (
     remove_single_item_from_cart,
     PaymentView,
     AddCouponView,
-    RequestRefundView
+    RequestRefundView,
+add_to_favorites, remove_from_favorites, favorites_view, remove_from_favorites_list
 )
 
 app_name = 'core'
@@ -25,5 +26,9 @@ urlpatterns = [
     path('remove-item-from-cart/<slug>/', remove_single_item_from_cart,
          name='remove-single-item-from-cart'),
     path('payment/<payment_option>/', PaymentView.as_view(), name='payment'),
-    path('request-refund/', RequestRefundView.as_view(), name='request-refund')
+    path('request-refund/', RequestRefundView.as_view(), name='request-refund'),
+    path('favorites/', favorites_view, name='favorites'),
+    path('product/<int:product_id>/favorite/add/', add_to_favorites, name='add_to_favorites'),
+    path('product/<int:product_id>/favorite/remove/', remove_from_favorites, name='remove_from_favorites'),
+    path('favorites/remove/<int:favorite_id>/', remove_from_favorites_list, name='remove_from_favorites_list'),
 ]

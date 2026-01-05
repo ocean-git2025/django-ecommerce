@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">My Favorites</h1>
+
+    {% if favorites %}
+        <div class="row">
+            {% for favorite in favorites %}
+                {% with product=favorite.product %}
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card h-100">
+                        <a href="{% url 'product' product.id %}">
+                            <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.title }}">
+                        </a>
+                        <div class="card-body">
+                            <h4 class="card-title">
+                                <a href="{% url 'product' product.id %}">{{ product.title }}</a>
+                            </h4>
+                            <h5>${{ product.price }}</h5>
+                            <p class="card-text">{{ product.description|truncatewords:15 }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary btn-sm">Add to Cart</a>
+                            <a href="{% url 'remove_from_favorites_list' favorite.id %}" class="btn btn-danger btn-sm float-right">
+                                <i class="fas fa-times"></i> Remove
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p>You have no favorite products yet.</p>
+            <a href="{% url 'home' %}" class="btn btn-outline-primary">Browse Products</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
