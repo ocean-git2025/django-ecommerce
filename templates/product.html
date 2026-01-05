@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% load cart_template_tags %}  <!-- <--- 在这里添加这一行 -->
 {% block content %}
 
   <main class="mt-5 pt-4">
@@ -59,6 +59,27 @@
             <a href="{{ object.get_remove_from_cart_url }}" class="btn btn-danger btn-md my-0 p">
               Remove from cart
             </a>
+
+                        <!-- 在这里开始粘贴收藏按钮的代码 -->
+            <div class="mt-3">
+              {% if user.is_authenticated %}
+                {% if object|is_favorite:user %}
+                  <a href="{% url 'remove_from_favorites' object.id %}" class="btn btn-danger btn-sm">
+                    <i class="fas fa-heart"></i> Remove from Favorites
+                  </a>
+                {% else %}
+                  <a href="{% url 'add_to_favorites' object.id %}" class="btn btn-outline-danger btn-sm">
+                    <i class="far fa-heart"></i> Add to Favorites
+                  </a>
+                {% endif %}
+              {% else %}
+                <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn btn-outline-danger btn-sm">
+                  <i class="far fa-heart"></i> Login to Favorite
+                </a>
+              {% endif %}
+            </div>
+            <!-- 收藏按钮代码粘贴结束 -->
+
 
           </div>
           <!--Content-->

@@ -11,3 +11,9 @@ def cart_item_count(user):
         if qs.exists():
             return qs[0].items.count()
     return 0
+
+@register.filter
+def is_favorite(product, user):
+    if user.is_authenticated:
+        return Favorite.objects.filter(user=user, product=product).exists()
+    return False
