@@ -178,6 +178,18 @@ class Refund(models.Model):
         return f"{self.pk}"
 
 
+class ProductFavorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.item.title}"
+
+    class Meta:
+        unique_together = ('user', 'item')
+
+
 def userprofile_receiver(sender, instance, created, *args, **kwargs):
     if created:
         userprofile = UserProfile.objects.create(user=instance)

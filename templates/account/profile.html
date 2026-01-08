@@ -1,0 +1,118 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+
+{% block head_title %}{% trans "My Profile" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="#profile" class="list-group-item active">个人资料</a>
+                <a href="#favorites" class="list-group-item">我的收藏</a>
+                <a href="{% url 'account_email' %}" class="list-group-item">邮箱设置</a>
+                <a href="{% url 'account_change_password' %}" class="list-group-item">修改密码</a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div id="profile" class="tab-content">
+                <div class="tab-pane active">
+                    <h2>个人资料</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">用户信息</h5>
+                            <p class="card-text">用户名: {{ user.username }}</p>
+                            <p class="card-text">邮箱: {{ user.email }}</p>
+                            <p class="card-text">注册时间: {{ user.date_joined|date:"Y-m-d H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="favorites" class="tab-content mt-4">
+                <h2>我的收藏</h2>
+                {% if favorites %}
+                <div class="table-responsive text-nowrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">商品图片</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">价格</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for favorite in favorites %}
+                            <tr>
+                                <th scope="row">{{ forloop.counter }}</th>
+                                <td>
+                                    <img src="{{ favorite.item.image.url }}" alt="{{ favorite.item.title }}" 
+                                         style="max-width: 100px; max-height: 100px; object-fit: cover;">
+                                </td>
+                                <td>
+                                    <a href="{% url 'core:product' favorite.item.slug %}" class="dark-grey-text">
+                                        {{ favorite.item.title }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if favorite.item.discount_price %}
+                                      <span class="mr-1">
+                                        <del>${{ favorite.item.price }}</del>
+                                      </span>
+                                      <span>${{ favorite.item.discount_price }}</span>
+                                    {% else %}
+                                      <span>${{ favorite.item.price }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'core:remove-from-favorites' favorite.item.slug %}" 
+                                       class="btn btn-danger btn-sm my-0 p">
+                                      <i class="fas fa-trash"></i> 取消收藏
+                                    </a>
+                                    <a href="{% url 'core:add-to-cart' favorite.item.slug %}" 
+                                       class="btn btn-primary btn-sm my-0 p ml-2">
+                                      <i class="fas fa-shopping-cart"></i> 加入购物车
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                  <i class="fas fa-info-circle"></i> 您还没有收藏任何商品
+                </div>
+                <a class='btn btn-primary' href='/'>继续购物</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 简单的标签页切换功能
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.list-group-item');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 移除所有激活状态
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(content => content.style.display = 'none');
+            
+            // 添加当前激活状态
+            this.classList.add('active');
+            const target = this.getAttribute('href').substring(1);
+            document.getElementById(target).style.display = 'block';
+        });
+    });
+});
+</script>
+{% endblock %}

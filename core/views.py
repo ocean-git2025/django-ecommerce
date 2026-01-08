@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.generic import ListView, DetailView, View
 
 from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
-from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile
+from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile, ProductFavorite
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -367,6 +367,16 @@ class OrderSummaryView(LoginRequiredMixin, View):
 class ItemDetailView(DetailView):
     model = Item
     template_name = "product.html"
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            is_favorited = ProductFavorite.objects.filter(
+                user=self.request.user,
+                item=self.object
+            ).exists()
+            context['is_favorited'] = is_favorited
+        return context
 
 
 @login_required
@@ -456,6 +466,50 @@ def remove_single_item_from_cart(request, slug):
     else:
         messages.info(request, "You do not have an active order")
         return redirect("core:product", slug=slug)
+
+
+@login_required
+def add_to_favorites(request, slug):
+    item = get_object_or_404(Item, slug=slug)
+    favorite, created = ProductFavorite.objects.get_or_create(
+        user=request.user,
+        item=item
+    )
+    if created:
+        messages.success(request, "商品已添加到收藏夹")
+    else:
+        messages.info(request, "商品已在收藏夹中")
+    return redirect("core:product", slug=slug)
+
+
+@login_required
+def remove_from_favorites(request, slug):
+    item = get_object_or_404(Item, slug=slug)
+    ProductFavorite.objects.filter(
+        user=request.user,
+        item=item
+    ).delete()
+    messages.success(request, "商品已从收藏夹中移除")
+    return redirect("core:product", slug=slug)
+
+
+@login_required
+def favorites_list(request):
+    favorites = ProductFavorite.objects.filter(user=request.user).order_by('-created_at')
+    context = {
+        'favorites': favorites
+    }
+    return render(request, 'favorites.html', context)
+
+
+@login_required
+def profile(request):
+    favorites = ProductFavorite.objects.filter(user=request.user).order_by('-created_at')
+    context = {
+        'user': request.user,
+        'favorites': favorites
+    }
+    return render(request, 'account/profile.html', context)
 
 
 def get_coupon(request, code):
