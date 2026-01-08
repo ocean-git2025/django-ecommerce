@@ -502,6 +502,16 @@ def favorites_list(request):
     return render(request, 'favorites.html', context)
 
 
+@login_required
+def profile(request):
+    favorites = ProductFavorite.objects.filter(user=request.user).order_by('-created_at')
+    context = {
+        'user': request.user,
+        'favorites': favorites
+    }
+    return render(request, 'account/profile.html', context)
+
+
 def get_coupon(request, code):
     try:
         coupon = Coupon.objects.get(code=code)

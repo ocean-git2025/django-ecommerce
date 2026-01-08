@@ -12,7 +12,8 @@ from .views import (
     RequestRefundView,
     add_to_favorites,
     remove_from_favorites,
-    favorites_list
+    favorites_list,
+    profile
 )
 
 app_name = 'core'
@@ -31,5 +32,6 @@ urlpatterns = [
     path('request-refund/', RequestRefundView.as_view(), name='request-refund'),
     path('favorites/', favorites_list, name='favorites'),
     path('add-to-favorites/<slug>/', add_to_favorites, name='add-to-favorites'),
-    path('remove-from-favorites/<slug>/', remove_from_favorites, name='remove-from-favorites')
+    path('remove-from-favorites/<slug>/', remove_from_favorites, name='remove-from-favorites'),
+    path('profile/', profile, name='profile')
 ]
