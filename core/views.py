@@ -517,3 +517,49 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+class OrderDetailView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        try:
+            order = Order.objects.get(ref_code=kwargs.get('ref_code'))
+            if order.user != self.request.user:
+                messages.warning(self.request, "You don't have permission to view this order")
+                return redirect("core:home")
+            context = {
+                'order': order
+            }
+            return render(self.request, "order_detail.html", context)
+        except ObjectDoesNotExist:
+            messages.warning(self.request, "This order does not exist.")
+            return redirect("core:home")
+
+
+@login_required
+def cancel_order(request, ref_code):
+    try:
+        order = Order.objects.get(ref_code=ref_code)
+        if order.user != request.user:
+            messages.warning(request, "You don't have permission to cancel this order")
+            return redirect("core:home")
+        
+        if order.can_cancel():
+            order.status = 'X'
+            order.save()
+            messages.success(request, "Your order has been cancelled successfully")
+        else:
+            messages.warning(request, "This order cannot be cancelled")
+        
+        return redirect("core:order-detail", ref_code=ref_code)
+    except ObjectDoesNotExist:
+        messages.warning(request, "This order does not exist.")
+        return redirect("core:home")
+
+
+class OrderHistoryView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        orders = Order.objects.filter(user=self.request.user, ordered=True).order_by('-ordered_date')
+        context = {
+            'orders': orders
+        }
+        return render(self.request, "order_history.html", context)

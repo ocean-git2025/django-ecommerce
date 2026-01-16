@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block head_title %}
+Order History
+{% endblock %}
+
+{% block content %}
+<main>
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-12">
+        <h2 class="mb-4">Order History</h2>
+        
+        {% if orders %}
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Order Reference</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in orders %}
+              <tr>
+                <td>{{ order.ref_code }}</td>
+                <td>{{ order.ordered_date|date:"Y-m-d H:i" }}</td>
+                <td>
+                  {% if order.status == 'P' %}
+                    <span class="badge badge-warning">Pending</span>
+                  {% elif order.status == 'S' %}
+                    <span class="badge badge-info">Shipped</span>
+                  {% elif order.status == 'D' %}
+                    <span class="badge badge-primary">Delivering</span>
+                  {% elif order.status == 'C' %}
+                    <span class="badge badge-success">Completed</span>
+                  {% elif order.status == 'X' %}
+                    <span class="badge badge-danger">Cancelled</span>
+                  {% endif %}
+                </td>
+                <td>${{ order.get_total }}</td>
+                <td>
+                  <a href="{% url 'core:order-detail' order.ref_code %}" class="btn btn-sm btn-primary">
+                    View Details
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          You don't have any orders yet. <a href="{% url 'core:home' %}">Start shopping now!</a>
+        </div>
+        {% endif %}
+        
+        <a href="{% url 'core:home' %}" class="btn btn-primary mt-3">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock content %}
