@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>订单详情</h1>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">订单 #{{ object.id }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">订单号: {{ object.ref_code }}</h6>
+        <p class="card-text">
+          <strong>订单状态:</strong> 
+          {% for status in status_choices %}
+            {% if object.status == status.0 %}
+              {{ status.1 }}
+            {% endif %}
+          {% endfor %}
+        </p>
+        <p class="card-text"><strong>下单时间:</strong> {{ object.ordered_date }}</p>
+        
+        {% if object.cancelled %}
+          <div class="alert alert-danger" role="alert">
+            该订单已取消
+          </div>
+        {% else %}
+          {% if object.status == 'P' %}
+            <a href="{% url 'core:cancel-order' object.id %}" class="btn btn-danger">取消订单</a>
+          {% endif %}
+        {% endif %}
+        
+        <h5 class="mt-4">订单商品</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">商品</th>
+              <th scope="col">数量</th>
+              <th scope="col">价格</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order_item in object.items.all %}
+              <tr>
+                <td>{{ order_item.item.title }}</td>
+                <td>{{ order_item.quantity }}</td>
+                <td>${{ order_item.get_final_price }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2"><strong>总计</strong></td>
+              <td><strong>${{ object.get_total }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        {% if object.shipping_address %}
+          <h5 class="mt-4">配送地址</h5>
+          <p class="card-text">
+            {{ object.shipping_address.street_address }},<br>
+            {{ object.shipping_address.apartment_address }}<br>
+            {{ object.shipping_address.city }}, {{ object.shipping_address.zip }}<br>
+            {{ object.shipping_address.country }}
+          </p>
+        {% endif %}
+        
+        {% if object.billing_address %}
+          <h5 class="mt-4">账单地址</h5>
+          <p class="card-text">
+            {{ object.billing_address.street_address }},<br>
+            {{ object.billing_address.apartment_address }}<br>
+            {{ object.billing_address.city }}, {{ object.billing_address.zip }}<br>
+            {{ object.billing_address.country }}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}

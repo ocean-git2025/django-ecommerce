@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>我的订单</h1>
+    {% if orders %}
+      <div class="row">
+        {% for order in orders %}
+          <div class="col-md-4 mb-3">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">订单 #{{ order.id }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{ order.ordered_date|date:'Y-m-d H:i' }}</h6>
+                <p class="card-text">
+                  <strong>状态:</strong> 
+                  {% for status in status_choices %}
+                    {% if order.status == status.0 %}
+                      {{ status.1 }}
+                    {% endif %}
+                  {% endfor %}
+                </p>
+                <p class="card-text"><strong>总计:</strong> ${{ order.get_total }}</p>
+                <a href="{% url 'core:order-detail' order.id %}" class="btn btn-primary">查看详情</a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>您还没有任何订单。</p>
+    {% endif %}
+  </div>
+{% endblock content %}

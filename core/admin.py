@@ -13,10 +13,12 @@ make_refund_accepted.short_description = 'Update orders to refund granted'
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['user',
                     'ordered',
+                    'status',
                     'being_delivered',
                     'received',
                     'refund_requested',
                     'refund_granted',
+                    'cancelled',
                     'shipping_address',
                     'billing_address',
                     'payment',
@@ -30,10 +32,12 @@ class OrderAdmin(admin.ModelAdmin):
         'coupon'
     ]
     list_filter = ['ordered',
+                   'status',
                    'being_delivered',
                    'received',
                    'refund_requested',
-                   'refund_granted']
+                   'refund_granted',
+                   'cancelled']
     search_fields = [
         'user__username',
         'ref_code'
@@ -55,7 +59,12 @@ class AddressAdmin(admin.ModelAdmin):
     search_fields = ['user', 'street_address', 'apartment_address', 'zip']
 
 
-admin.site.register(Item)
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ['title', 'price', 'stock', 'stock_threshold']
+    list_filter = ['category', 'label']
+    search_fields = ['title', 'description']
+
+admin.site.register(Item, ItemAdmin)
 admin.site.register(OrderItem)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Payment)

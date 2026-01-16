@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.generic import ListView, DetailView, View
 
 from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
-from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile
+from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile, ORDER_STATUS_CHOICES
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -517,3 +517,44 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+class OrderDetailView(LoginRequiredMixin, DetailView):
+    model = Order
+    template_name = 'order_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = ORDER_STATUS_CHOICES
+        return context
+
+
+@login_required
+def cancel_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    # Only allow cancellation if order is not shipped
+    if order.status in ['P'] and not order.cancelled:
+        order.cancelled = True
+        order.save()
+        messages.success(request, "订单已成功取消。")
+    else:
+        messages.warning(request, "该订单无法取消。")
+    
+    return redirect('core:order-detail', pk=order_id)
+
+
+@login_required
+def user_orders(request):
+    orders = Order.objects.filter(user=request.user, ordered=True).order_by('-ordered_date')
+    return render(request, 'user_orders.html', {'orders': orders})
+
+
+# Admin views
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import F
+
+@staff_member_required
+def low_stock_alert(request):
+    low_stock_items = Item.objects.filter(stock__lte=F('stock_threshold'))
+    return render(request, 'low_stock_alert.html', {'items': low_stock_items})
