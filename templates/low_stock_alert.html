@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>库存预警</h1>
+    {% if items %}
+      <div class="alert alert-warning" role="alert">
+        以下商品库存已低于阈值，请及时补货！
+      </div>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">商品名称</th>
+            <th scope="col">当前库存</th>
+            <th scope="col">库存阈值</th>
+            <th scope="col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.title }}</td>
+              <td>{{ item.stock }}</td>
+              <td>{{ item.stock_threshold }}</td>
+              <td>
+                <a href="/admin/core/item/{{ item.id }}/change/" class="btn btn-sm btn-primary">编辑库存</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-success" role="alert">
+        所有商品库存均在安全范围内。
+      </div>
+    {% endif %}
+  </div>
+{% endblock content %}
