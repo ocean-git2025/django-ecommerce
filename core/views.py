@@ -517,3 +517,30 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+@login_required
+def order_detail(request, ref_code):
+    order = get_object_or_404(Order, ref_code=ref_code, user=request.user)
+    return render(request, 'order_detail.html', {'order': order})
+
+
+@login_required
+def cancel_order(request, ref_code):
+    order = get_object_or_404(Order, ref_code=ref_code, user=request.user)
+    if order.status == 'P':
+        order.cancelled = True
+        order.save()
+        messages.success(request, '订单已成功取消')
+    else:
+        messages.warning(request, '只有待处理的订单才能取消')
+    return redirect('core:order-detail', ref_code=ref_code)
+
+
+class OrderListView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = 'order_list.html'
+    context_object_name = 'orders'
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user, ordered=True).order_by('-ordered_date')

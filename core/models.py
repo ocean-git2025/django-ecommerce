@@ -18,6 +18,13 @@ LABEL_CHOICES = (
     ('D', 'danger')
 )
 
+ORDER_STATUS_CHOICES = (
+    ('P', '待处理'),
+    ('S', '已发货'),
+    ('D', '配送中'),
+    ('C', '已完成')
+)
+
 ADDRESS_CHOICES = (
     ('B', 'Billing'),
     ('S', 'Shipping'),
@@ -43,6 +50,8 @@ class Item(models.Model):
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField()
+    stock = models.IntegerField(default=0)
+    stock_threshold = models.IntegerField(default=5)
 
     def __str__(self):
         return self.title
@@ -96,6 +105,7 @@ class Order(models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
+    status = models.CharField(choices=ORDER_STATUS_CHOICES, max_length=1, default='P')
     shipping_address = models.ForeignKey(
         'Address', related_name='shipping_address', on_delete=models.SET_NULL, blank=True, null=True)
     billing_address = models.ForeignKey(
@@ -108,6 +118,7 @@ class Order(models.Model):
     received = models.BooleanField(default=False)
     refund_requested = models.BooleanField(default=False)
     refund_granted = models.BooleanField(default=False)
+    cancelled = models.BooleanField(default=False)
 
     '''
     1. Item added to cart
@@ -178,9 +189,35 @@ class Refund(models.Model):
         return f"{self.pk}"
 
 
+class StockAlert(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    threshold = models.IntegerField()
+    current_stock = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"库存预警: {self.item.title} (当前: {self.current_stock}, 阈值: {self.threshold})"
+
+
 def userprofile_receiver(sender, instance, created, *args, **kwargs):
     if created:
         userprofile = UserProfile.objects.create(user=instance)
 
 
 post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)
+
+
+def check_stock_alert(sender, instance, created, **kwargs):
+    if instance.stock <= instance.stock_threshold:
+        if not created:
+            alert_exists = StockAlert.objects.filter(item=instance, resolved=False).exists()
+            if not alert_exists:
+                StockAlert.objects.create(
+                    item=instance,
+                    threshold=instance.stock_threshold,
+                    current_stock=instance.stock
+                )
+
+
+post_save.connect(check_stock_alert, sender=Item)
