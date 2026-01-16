@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <main>
+    <div class="container">
+      <h2>订单详情</h2>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">订单编号: {{ order.ref_code }}</h5>
+          <p class="card-text"><strong>下单时间:</strong> {{ order.ordered_date }}</p>
+          <p class="card-text"><strong>订单状态:</strong>
+            <span class="badge badge-{% if order.status == 'P' %}warning{% elif order.status == 'S' %}primary{% elif order.status == 'D' %}info{% elif order.status == 'C' %}success{% endif %}">
+              {{ order.get_status_display }}
+            </span>
+          </p>
+          {% if order.cancelled %}
+          <p class="card-text"><strong>订单状态:</strong> <span class="badge badge-danger">已取消</span></p>
+          {% endif %}
+          <p class="card-text"><strong>订单总额:</strong> ${{ order.get_total }}</p>
+          
+          {% if order.status == 'P' and not order.cancelled %}
+          <a href="{% url 'core:cancel-order' order.ref_code %}" class="btn btn-danger">取消订单</a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <h3 class="mt-4">配送地址</h3>
+      <div class="card">
+        <div class="card-body">
+          <p class="card-text">{{ order.shipping_address.street_address }}, {{ order.shipping_address.apartment_address }}</p>
+          <p class="card-text">{{ order.shipping_address.city }}, {{ order.shipping_address.zip }}</p>
+          <p class="card-text">{{ order.shipping_address.country }}</p>
+        </div>
+      </div>
+      
+      <h3 class="mt-4">商品列表</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">商品名称</th>
+            <th scope="col">价格</th>
+            <th scope="col">数量</th>
+            <th scope="col">小计</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+          <tr>
+            <td>{{ item.item.title }}</td>
+            <td>${{ item.item.price }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.get_final_price }}</td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td colspan="3"><strong>总计</strong></td>
+            <td><strong>${{ order.get_total }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+{% endblock content %}
