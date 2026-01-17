@@ -350,6 +350,22 @@ class HomeView(ListView):
     paginate_by = 10
     template_name = "home.html"
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category = self.request.GET.get('category')
+        search_query = self.request.GET.get('search')
+        if category:
+            queryset = queryset.filter(category=category)
+        if search_query:
+            queryset = queryset.filter(title__icontains=search_query)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_category'] = self.request.GET.get('category', '')
+        context['search_query'] = self.request.GET.get('search', '')
+        return context
+
 
 class OrderSummaryView(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
