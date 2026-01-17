@@ -22,28 +22,26 @@
           <!-- Links -->
           <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-              <a class="nav-link" href="#">All
+              <a class="nav-link" href="{% url 'core:home' %}">所有商品
                 <span class="sr-only">(current)</span>
               </a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Shirts</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Sport wears</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Outwears</a>
-            </li>
-
           </ul>
           <!-- Links -->
 
-          <form class="form-inline">
+          <form class="form-inline" method="GET" action="">
             <div class="md-form my-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+              <input type="text" name="search_query" class="form-control mr-sm-2" placeholder="搜索商品..." value="{{ request.GET.search_query }}">
+              <select name="category" class="form-control mr-sm-2">
+                <option value="">所有分类</option>
+                <option value="CLOTHING" {% if request.GET.category == 'CLOTHING' %}selected{% endif %}>服装</option>
+                <option value="ACCESSORY" {% if request.GET.category == 'ACCESSORY' %}selected{% endif %}>配饰</option>
+                <option value="ELECTRONIC" {% if request.GET.category == 'ELECTRONIC' %}selected{% endif %}>数码</option>
+              </select>
+              <button class="btn btn-outline-white btn-md my-0 waves-effect" type="submit">搜索</button>
             </div>
           </form>
+          <a href="{% url 'core:home' %}" class="btn btn-outline-white btn-md my-0 waves-effect">重置</a>
         </div>
         <!-- Collapsible content -->
 
