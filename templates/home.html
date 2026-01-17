@@ -39,10 +39,20 @@
           </ul>
           <!-- Links -->
 
-          <form class="form-inline">
+          <form class="form-inline" method="get">
+            <select class="form-control mr-sm-2" name="category" onchange="this.form.submit()">
+              <option value="">全部分类</option>
+              <option value="CL" {% if current_category == 'CL' %}selected{% endif %}>服装</option>
+              <option value="AC" {% if current_category == 'AC' %}selected{% endif %}>配饰</option>
+              <option value="EL" {% if current_category == 'EL' %}selected{% endif %}>数码</option>
+            </select>
             <div class="md-form my-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search" name="search" value="{{ search_query }}">
             </div>
+            <button class="btn btn-outline-white btn-md my-0 p" type="submit">搜索</button>
+            {% if current_category or search_query %}
+            <a class="btn btn-outline-white btn-md my-0 p ml-2" href="{{ request.path }}">重置</a>
+            {% endif %}
           </form>
         </div>
         <!-- Collapsible content -->
