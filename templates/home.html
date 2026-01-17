@@ -21,28 +21,31 @@
 
           <!-- Links -->
           <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="#">All
+            <li class="nav-item {% if not request.GET.category %}active{% endif %}">
+              <a class="nav-link" href="?">全部
                 <span class="sr-only">(current)</span>
               </a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Shirts</a>
+            <li class="nav-item {% if request.GET.category == 'C' %}active{% endif %}">
+              <a class="nav-link" href="?category=C">服装</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Sport wears</a>
+            <li class="nav-item {% if request.GET.category == 'A' %}active{% endif %}">
+              <a class="nav-link" href="?category=A">配饰</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Outwears</a>
+            <li class="nav-item {% if request.GET.category == 'D' %}active{% endif %}">
+              <a class="nav-link" href="?category=D">数码</a>
             </li>
 
           </ul>
           <!-- Links -->
 
-          <form class="form-inline">
-            <div class="md-form my-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-            </div>
+          <form class="form-inline" method="get" action="">
+            <select name="category" class="form-control mr-sm-2" onchange="this.form.submit()">
+              <option value="">全部分类</option>
+              <option value="C" {% if request.GET.category == 'C' %}selected{% endif %}>服装</option>
+              <option value="A" {% if request.GET.category == 'A' %}selected{% endif %}>配饰</option>
+              <option value="D" {% if request.GET.category == 'D' %}selected{% endif %}>数码</option>
+            </select>
           </form>
         </div>
         <!-- Collapsible content -->

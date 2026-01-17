@@ -350,6 +350,13 @@ class HomeView(ListView):
     paginate_by = 10
     template_name = "home.html"
 
+    def get_queryset(self):
+        queryset = Item.objects.all()
+        category = self.request.GET.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
 
 class OrderSummaryView(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
