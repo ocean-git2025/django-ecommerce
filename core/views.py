@@ -6,14 +6,14 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.views.generic import ListView, DetailView, View
 
 from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
-from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile
+from .models import (Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile, ORDER_STATUS_CANCELLED)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -517,3 +517,49 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+class OrderHistoryView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = "order_history.html"
+    context_object_name = "orders"
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user, ordered=True).order_by('-ordered_date')
+
+
+class OrderDetailView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        ref_code = kwargs.get('ref_code')
+        try:
+            order = Order.objects.get(ref_code=ref_code, user=self.request.user)
+            return render(self.request, "order_detail.html", {'order': order})
+        except ObjectDoesNotExist:
+            messages.warning(self.request, "订单不存在或您没有权限查看此订单")
+            return redirect("core:order-history")
+        except Exception as e:
+            messages.error(self.request, "获取订单详情时发生错误")
+            return redirect("core:order-history")
+
+
+@login_required
+def cancel_order(request, ref_code):
+    try:
+        order = Order.objects.get(ref_code=ref_code, user=request.user)
+        if order.can_cancel():
+            order.cancel()
+            messages.success(request, "订单已成功取消")
+        else:
+            status_display = order.get_status_display_cn()
+            messages.warning(request, f"当前订单状态为「{status_display}」，无法取消（仅待处理状态可取消）")
+        return redirect("core:order-detail", ref_code=ref_code)
+    except ObjectDoesNotExist:
+        messages.warning(request, "订单不存在或您没有权限操作此订单")
+        return redirect("core:order-history")
+    except ValidationError as e:
+        messages.error(request, str(e))
+        return redirect("core:order-detail", ref_code=ref_code)
+    except Exception as e:
+        messages.error(request, "取消订单时发生错误，请稍后重试")
+        return redirect("core:order-history")

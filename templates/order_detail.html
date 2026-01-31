@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <h2 class="my-5 text-center">订单详情</h2>
+        
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <h5 class="mb-0"><i class="fas fa-file-invoice mr-2"></i>订单号: {{ order.ref_code }}</h5>
+            <span class="badge badge-pill p-2
+              {% if order.status == 'PENDING' %}badge-warning
+              {% elif order.status == 'SHIPPED' %}badge-info
+              {% elif order.status == 'DELIVERING' %}badge-primary
+              {% elif order.status == 'COMPLETED' %}badge-success
+              {% elif order.status == 'CANCELLED' %}badge-danger
+              {% else %}badge-secondary{% endif %}">
+              <i class="fas fa-circle mr-1" style="font-size: 0.5rem;"></i>
+              {% if order.status == 'PENDING' %}待处理
+              {% elif order.status == 'SHIPPED' %}已发货
+              {% elif order.status == 'DELIVERING' %}配送中
+              {% elif order.status == 'COMPLETED' %}已完成
+              {% elif order.status == 'CANCELLED' %}已取消
+              {% else %}未知{% endif %}
+            </span>
+          </div>
+          
+          <div class="card-body">
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card bg-light border-0">
+                  <div class="card-body">
+                    <h6 class="card-title text-muted mb-3"><i class="fas fa-info-circle mr-2"></i>订单信息</h6>
+                    <p class="mb-2"><strong>下单时间:</strong> {{ order.ordered_date|date:"Y-m-d H:i" }}</p>
+                    {% if order.shipping_address %}
+                    <p class="mb-2"><strong>收货地址:</strong><br>
+                      {{ order.shipping_address.street_address }}<br>
+                      {% if order.shipping_address.apartment_address %}{{ order.shipping_address.apartment_address }}<br>{% endif %}
+                      {{ order.shipping_address.country.name }} {{ order.shipping_address.zip }}
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card bg-light border-0">
+                  <div class="card-body">
+                    <h6 class="card-title text-muted mb-3"><i class="fas fa-credit-card mr-2"></i>支付信息</h6>
+                    <p class="mb-2"><strong>支付方式:</strong> {{ order.get_payment_option_display|default:"在线支付" }}</p>
+                    <p class="mb-2"><strong>订单金额:</strong> <span class="text-primary h4">¥{{ order.get_total }}</span></p>
+                    {% if order.coupon %}
+                    <p class="mb-2"><strong>优惠券:</strong> <span class="text-success">-¥{{ order.coupon.amount }}</span></p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="order-status-timeline mb-4">
+              <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                  <h6 class="mb-4 text-center"><i class="fas fa-shipping-fast mr-2"></i>订单状态追踪</h6>
+                  {% if order.status != 'CANCELLED' %}
+                  <div class="timeline-container">
+                    <div class="timeline-progress" style="width: 
+                      {% if order.status == 'PENDING' %}0%
+                      {% elif order.status == 'SHIPPED' %}33.33%
+                      {% elif order.status == 'DELIVERING' %}66.66%
+                      {% elif order.status == 'COMPLETED' %}100%
+                      {% else %}0%{% endif %};"></div>
+                    <div class="timeline-track"></div>
+                    <div class="row">
+                      <div class="col-3 text-center timeline-item {% if order.status == 'PENDING' %}active{% elif order.status == 'SHIPPED' or order.status == 'DELIVERING' or order.status == 'COMPLETED' %}completed{% else %}pending{% endif %}">
+                        <div class="timeline-circle">
+                          <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="timeline-label">下单完成</div>
+                        <div class="timeline-time">{{ order.ordered_date|date:"m-d H:i" }}</div>
+                      </div>
+                      <div class="col-3 text-center timeline-item {% if order.status == 'SHIPPED' %}active{% elif order.status == 'DELIVERING' or order.status == 'COMPLETED' %}completed{% else %}pending{% endif %}">
+                        <div class="timeline-circle">
+                          {% if order.status == 'DELIVERING' or order.status == 'COMPLETED' %}
+                          <i class="fas fa-check"></i>
+                          {% else %}
+                          <i class="fas fa-box"></i>
+                          {% endif %}
+                        </div>
+                        <div class="timeline-label">已发货</div>
+                        <div class="timeline-time">{% if order.shipped_date %}{{ order.shipped_date|date:"m-d H:i" }}{% else %}--{% endif %}</div>
+                      </div>
+                      <div class="col-3 text-center timeline-item {% if order.status == 'DELIVERING' %}active{% elif order.status == 'COMPLETED' %}completed{% else %}pending{% endif %}">
+                        <div class="timeline-circle">
+                          {% if order.status == 'COMPLETED' %}
+                          <i class="fas fa-check"></i>
+                          {% else %}
+                          <i class="fas fa-truck"></i>
+                          {% endif %}
+                        </div>
+                        <div class="timeline-label">配送中</div>
+                        <div class="timeline-time">{% if order.delivering_date %}{{ order.delivering_date|date:"m-d H:i" }}{% else %}--{% endif %}</div>
+                      </div>
+                      <div class="col-3 text-center timeline-item {% if order.status == 'COMPLETED' %}active completed{% else %}pending{% endif %}">
+                        <div class="timeline-circle">
+                          {% if order.status == 'COMPLETED' %}
+                          <i class="fas fa-check"></i>
+                          {% else %}
+                          <i class="fas fa-home"></i>
+                          {% endif %}
+                        </div>
+                        <div class="timeline-label">已完成</div>
+                        <div class="timeline-time">{% if order.completed_date %}{{ order.completed_date|date:"m-d H:i" }}{% else %}--{% endif %}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {% else %}
+                  <div class="text-center py-4">
+                    <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center mx-auto shadow" style="width: 60px; height: 60px;">
+                      <i class="fas fa-times fa-lg"></i>
+                    </div>
+                    <h5 class="mt-3 text-danger">订单已取消</h5>
+                    <p class="text-muted mb-0">此订单于 {{ order.ordered_date|date:"Y-m-d H:i" }} 取消</p>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <h6 class="mb-3"><i class="fas fa-shopping-bag mr-2"></i>订单商品</h6>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="thead-light">
+                  <tr>
+                    <th scope="col">商品</th>
+                    <th scope="col">单价</th>
+                    <th scope="col">数量</th>
+                    <th scope="col">小计</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for order_item in order.items.all %}
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div class="ml-3">
+                          <p class="mb-0 font-weight-bold">{{ order_item.item.title }}</p>
+                          {% if order_item.item.discount_price %}
+                          <small class="text-muted">已优惠</small>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </td>
+                    <td>¥{{ order_item.item.price }}</td>
+                    <td><span class="badge badge-secondary">{{ order_item.quantity }}</span></td>
+                    <td class="font-weight-bold">¥{{ order_item.get_final_price }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot class="bg-light">
+                  <tr>
+                    <td colspan="3" class="text-right"><strong>商品总计:</strong></td>
+                    <td><strong>¥{{ order.get_total|add:order.coupon.amount|default:order.get_total }}</strong></td>
+                  </tr>
+                  {% if order.coupon %}
+                  <tr class="text-success">
+                    <td colspan="3" class="text-right"><strong>优惠券折扣:</strong></td>
+                    <td><strong>-¥{{ order.coupon.amount }}</strong></td>
+                  </tr>
+                  {% endif %}
+                  <tr class="table-primary">
+                    <td colspan="3" class="text-right"><strong>应付金额:</strong></td>
+                    <td><strong class="h5 text-primary">¥{{ order.get_total }}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            
+            <div class="mt-4 d-flex justify-content-between">
+              <a href="{% url 'core:order-history' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-2"></i>返回订单列表
+              </a>
+              
+              {% if order.can_cancel %}
+              <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#cancelModal">
+                <i class="fas fa-times mr-2"></i>取消订单
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {% if order.can_cancel %}
+  <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="cancelModalLabel">
+            <i class="fas fa-exclamation-triangle mr-2"></i>确认取消订单
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-3">
+            <i class="fas fa-question-circle text-danger" style="font-size: 3rem;"></i>
+          </div>
+          <p class="text-center">您确定要取消订单 <strong>{{ order.ref_code }}</strong> 吗？</p>
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle mr-2"></i>
+            此操作仅适用于待处理状态的订单，取消后不可恢复。
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            <i class="fas fa-times mr-1"></i>返回
+          </button>
+          <a href="{% url 'core:cancel-order' order.ref_code %}" class="btn btn-danger">
+            <i class="fas fa-check mr-1"></i>确认取消
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</main>
+
+<style>
+.timeline-container {
+  position: relative;
+  padding: 20px 0;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 44px;
+  left: 12.5%;
+  width: 75%;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.timeline-progress {
+  position: absolute;
+  top: 44px;
+  left: 12.5%;
+  height: 4px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  border-radius: 2px;
+  z-index: 2;
+  transition: width 0.8s ease-in-out;
+}
+
+.timeline-item {
+  position: relative;
+  z-index: 3;
+}
+
+.timeline-circle {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.timeline-item.pending .timeline-circle {
+  background: #e0e0e0;
+  color: #999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-item.completed .timeline-circle {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.timeline-item.active .timeline-circle {
+  background: linear-gradient(135deg, #007bff, #6610f2);
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.timeline-item.active .timeline-circle::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 123, 255, 0.3);
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
+
+.timeline-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.timeline-item.pending .timeline-label {
+  color: #999;
+}
+
+.timeline-item.completed .timeline-label {
+  color: #28a745;
+}
+
+.timeline-item.active .timeline-label {
+  color: #007bff;
+}
+
+.timeline-time {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.timeline-item.active .timeline-time {
+  color: #007bff;
+  font-weight: 500;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
+}
+
+@media (max-width: 576px) {
+  .timeline-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .timeline-track,
+  .timeline-progress {
+    top: 38px;
+  }
+  
+  .timeline-label {
+    font-size: 0.75rem;
+  }
+  
+  .timeline-time {
+    font-size: 0.65rem;
+  }
+}
+</style>
+{% endblock content %}
