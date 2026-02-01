@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load custom_filters %}
 
 {% block content %}
 
@@ -9,10 +10,12 @@
       <div class="row wow fadeIn">
 
         <!--Grid column-->
-        <div class="col-md-6 mb-4">
-
-          <img src="https://mdbootstrap.com/img/Photos/Horizontal/E-commerce/Products/14.jpg" class="img-fluid" alt="">
-
+        <div class="col-md-6 mb-4" data-item-id="{{ object.id }}">
+          {% if object.image %}
+          <img src="{{ object.image.url }}" class="img-fluid" alt="{{ object.title }}">
+          {% else %}
+          <img src="https://via.placeholder.com/600x600?text=No+Image" class="img-fluid" alt="{{ object.title }}">
+          {% endif %}
         </div>
         <!--Grid column-->
 
@@ -43,19 +46,39 @@
 
             <p>{{ object.description }}</p>
 
-            {% comment %} <form class="d-flex justify-content-left">
-              <!-- Default input -->
-              <input type="number" value="1" aria-label="Search" class="form-control" style="width: 100px">
-              <button class="btn btn-primary btn-md my-0 p" type="submit">
-                Add to cart
-                <i class="fas fa-shopping-cart ml-1"></i>
-              </button>
+            <!-- Stock Information -->
+            <div class="mb-3">
+              <span id="stock-{{ object.id }}" class="badge {% if object.is_low_stock %}badge-danger{% else %}badge-success{% endif %}">
+                {% if object.stock <= 0 %}缺货{% elif object.is_low_stock %}库存: {{ object.stock }}{% else %}库存: {{ object.stock }}{% endif %}
+              </span>
+              {% if object.is_low_stock %}
+                <div id="low-stock-warning-{{ object.id }}" class="alert alert-warning mt-2" role="alert">
+                  库存警告：仅剩 {{ object.stock }} 件
+                </div>
+              {% endif %}
+            </div>
 
-            </form> {% endcomment %}
-            <a href="{{ object.get_add_to_cart_url }}" class="btn btn-primary btn-md my-0 p">
-              Add to cart
-              <i class="fas fa-shopping-cart ml-1"></i>
-            </a>
+            <!-- Quantity Selection and Add to Cart -->
+            <form class="d-flex justify-content-left mb-3" action="{% url 'core:add-to-cart' object.slug %}" method="post">
+              {% csrf_token %}
+              <!-- Default input -->
+              <div class="form-group">
+                <label for="quantity">Quantity:</label>
+                <select id="quantity-{{ object.id }}" name="quantity" class="form-control" style="width: 100px">
+                  {% for i in object.stock|make_range %}
+                    <option value="{{ i }}">{{ i }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="ml-3">
+                <button id="add-to-cart-{{ object.id }}" class="btn btn-primary btn-md my-0 p {% if object.stock <= 0 %}disabled{% endif %}" type="submit" {% if object.stock <= 0 %}disabled{% endif %}>
+                  {% if object.stock <= 0 %}缺货{% else %}加入购物车{% endif %}
+                  <i class="fas fa-shopping-cart ml-1"></i>
+                </button>
+              </div>
+            </form>
+
+            <!-- Remove from Cart Button -->
             <a href="{{ object.get_remove_from_cart_url }}" class="btn btn-danger btn-md my-0 p">
               Remove from cart
             </a>
