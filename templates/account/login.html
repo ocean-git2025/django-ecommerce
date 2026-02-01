@@ -1,4 +1,4 @@
-{% extends "account/base.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load account socialaccount %}
 {% load crispy_forms_tags %}
@@ -6,46 +6,77 @@
 {% block head_title %}{% trans "Sign In" %}{% endblock %}
 
 {% block content %}
-  <main>
+  <main class="mt-5 pt-4">
     <div class="container">
       <section class="mb-4">
         <div class="row wow fadeIn">
-          <div class='col-6 offset-3'>
-          <h1>{% trans "Sign In" %}</h1>
+          <div class="col-lg-6 col-md-8 mx-auto">
+            <!-- Card -->
+            <div class="card">
 
-          {% get_providers as socialaccount_providers %}
+              <!-- Card body -->
+              <div class="card-body">
 
-          {% if socialaccount_providers %}
-          <p>{% blocktrans with site.name as site_name %}Please sign in with one
-          of your existing third party accounts. Or, <a href="{{ signup_url }}">sign up</a>
-          for a {{ site_name }} account and sign in below:{% endblocktrans %}</p>
+                <!-- Material form login -->
+                <form class="login" method="POST" action="{% url 'account_login' %}">
+                  {% csrf_token %}
+                  
+                  <p class="h4 text-center mb-4">{% trans "Sign In" %}</p>
 
-          <div class="socialaccount_ballot">
+                  <!-- Material input email -->
+                  <div class="md-form">
+                    <i class="fas fa-envelope prefix grey-text"></i>
+                    <input type="email" id="materialLoginFormEmail" name="login" class="form-control" required>
+                    <label for="materialLoginFormEmail">{% trans "E-mail" %}</label>
+                  </div>
 
-            <ul class="socialaccount_providers">
-              {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-            </ul>
+                  <!-- Material input password -->
+                  <div class="md-form">
+                    <i class="fas fa-lock prefix grey-text"></i>
+                    <input type="password" id="materialLoginFormPassword" name="password" class="form-control" required>
+                    <label for="materialLoginFormPassword">{% trans "Password" %}</label>
+                  </div>
 
-            <div class="login-or">{% trans 'or' %}</div>
+                  <div class="d-flex justify-content-around">
+                    <div>
+                      <!-- Remember me -->
+                      <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="materialLoginFormRemember" name="remember">
+                        <label class="form-check-label" for="materialLoginFormRemember">{% trans "Remember me" %}</label>
+                      </div>
+                    </div>
+                    <div>
+                      <!-- Forgot password -->
+                      <a href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
+                    </div>
+                  </div>
 
-          </div>
+                  {% if redirect_field_value %}
+                  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                  {% endif %}
 
-          {% include "socialaccount/snippets/login_extra.html" %}
+                  <!-- Sign in button -->
+                  <button class="btn btn-info btn-rounded btn-block my-4 waves-effect z-depth-0" type="submit">{% trans "Sign In" %}</button>
 
-          {% else %}
-          <p>{% blocktrans %}If you have not created an account yet, then please
-          <a href="{{ signup_url }}">sign up</a> first.{% endblocktrans %}</p>
-          {% endif %}
+                  <!-- Register -->
+                  <p>{% trans "Not a member?" %} <a href="{% url 'account_signup' %}">{% trans "Register" %}</a></p>
 
-          <form class="login" method="POST" action="{% url 'account_login' %}">
-            {% csrf_token %}
-            {{ form|crispy }}
-            {% if redirect_field_value %}
-            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-            {% endif %}
-            <a class="btn btn-default" href="{% url 'account_reset_password' %}">{% trans "Forgot Password?" %}</a>
-            <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
-          </form>
+                  <!-- Social login -->
+                  {% get_providers as socialaccount_providers %}
+                  {% if socialaccount_providers %}
+                  <p>{% trans "Or sign in with:" %}</p>
+                  <div class="row mb-3">
+                    {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+                  </div>
+                  {% endif %}
+
+                </form>
+                <!-- Material form login -->
+
+              </div>
+
+            </div>
+            <!-- Card -->
           </div>
         </div>
       </section>

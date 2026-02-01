@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}商品列表 - Django电商{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1 class="h3 mb-0">商品列表</h1>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" data-sort="default">默认排序</button>
+                <button type="button" class="btn btn-outline-primary" data-sort="price-asc">价格从低到高</button>
+                <button type="button" class="btn btn-outline-primary" data-sort="price-desc">价格从高到低</button>
+                <button type="button" class="btn btn-outline-primary" data-sort="name">名称</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form id="filter-form" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="category-filter" class="form-label">商品类别</label>
+                            <select id="category-filter" class="form-select">
+                                <option value="">全部类别</option>
+                                <option value="S">衬衫</option>
+                                <option value="OW">户外穿戴</option>
+                                <option value="SH">鞋子</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="label-filter" class="form-label">商品标签</label>
+                            <select id="label-filter" class="form-select">
+                                <option value="">全部标签</option>
+                                <option value="P">主要</option>
+                                <option value="S">次要</option>
+                                <option value="D">危险</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search-input" class="form-label">搜索商品</label>
+                            <input type="text" id="search-input" class="form-control" placeholder="输入商品名称...">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">筛选</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="product-list">
+        {% for item in object_list %}
+        <div class="col-md-4 mb-4 product-item" data-category="{{ item.category }}" data-label="{{ item.label }}" data-name="{{ item.title }}" data-price="{{ item.price }}">
+            <div class="card h-100 product-card">
+                <div class="position-relative">
+                    {% if item.image %}
+                    <img src="{{ item.image.url }}" class="card-img-top product-image" alt="{{ item.title }}">
+                    {% else %}
+                    <img src="{% static 'img/product-placeholder.jpg' %}" class="card-img-top product-image" alt="{{ item.title }}">
+                    {% endif %}
+                    
+                    {% if item.is_low_stock %}
+                    <div class="position-absolute top-0 start-0 p-2">
+                        <span class="badge bg-danger">库存不足</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if item.label == 'P' %}
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <span class="badge bg-primary">主要</span>
+                    </div>
+                    {% elif item.label == 'S' %}
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <span class="badge bg-secondary">次要</span>
+                    </div>
+                    {% elif item.label == 'D' %}
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <span class="badge bg-warning text-dark">危险</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ item.title }}</h5>
+                    <p class="card-text text-muted small">{{ item.description|truncatewords:20 }}</p>
+                    
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="h5 text-primary mb-0">¥{{ item.price }}</span>
+                            <div class="stock-info" data-item-id="{{ item.id }}">
+                                {% if item.is_low_stock %}
+                                <span class="text-danger small">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    库存: {{ item.stock }}
+                                </span>
+                                {% else %}
+                                <span class="text-success small">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    库存: {{ item.stock }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ item.get_absolute_url }}" class="btn btn-outline-primary">
+                                <i class="bi bi-eye"></i> 查看详情
+                            </a>
+                            <button class="btn btn-primary add-to-cart-btn" data-item-id="{{ item.id }}" data-title="{{ item.title }}" data-price="{{ item.price }}" data-stock="{{ item.stock }}">
+                                <i class="bi bi-cart-plus"></i> 加入购物车
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                没有找到符合条件的商品。
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="商品列表分页">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1" aria-label="首页">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="上一页">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="首页">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="上一页">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <a class="page-link" href="#">{{ num }}</a>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="下一页">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="末页">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="下一页">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" aria-label="末页">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- 购物车成功提示模态框 -->
+<div class="modal fade" id="cart-success-modal" tabindex="-1" aria-labelledby="cart-success-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="modal-title" id="cart-success-modal-label">商品已添加到购物车</h5>
+                <p class="text-muted mt-2">
+                    <span id="added-product-name"></span> 已成功添加到您的购物车。
+                </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">继续购物</button>
+                <a href="{% url 'core:order-summary' %}" class="btn btn-primary">查看购物车</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化库存管理器
+    if (typeof StockManager !== 'undefined') {
+        window.stockManager = new StockManager();
+        window.stockManager.initStockDisplay();
+    }
+    
+    // 排序按钮点击事件
+    document.querySelectorAll('[data-sort]').forEach(button => {
+        button.addEventListener('click', function() {
+            // 移除所有按钮的active类
+            document.querySelectorAll('[data-sort]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 添加当前按钮的active类
+            this.classList.add('active');
+            
+            // 获取排序方式
+            const sortType = this.getAttribute('data-sort');
+            
+            // 排序商品
+            sortProducts(sortType);
+        });
+    });
+    
+    // 筛选表单提交事件
+    document.getElementById('filter-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        filterProducts();
+    });
+    
+    // 搜索输入框实时搜索
+    document.getElementById('search-input').addEventListener('input', function() {
+        filterProducts();
+    });
+    
+    // 添加到购物车按钮点击事件
+    document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const title = this.getAttribute('data-title');
+            const price = this.getAttribute('data-price');
+            const stock = this.getAttribute('data-stock');
+            
+            addToCart(itemId, title, price, stock);
+        });
+    });
+});
+
+/**
+ * 排序商品
+ * @param {string} sortType - 排序类型
+ */
+function sortProducts(sortType) {
+    const productList = document.getElementById('product-list');
+    const productItems = Array.from(productList.querySelectorAll('.product-item'));
+    
+    productItems.sort((a, b) => {
+        switch (sortType) {
+            case 'price-asc':
+                return parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price'));
+            case 'price-desc':
+                return parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price'));
+            case 'name':
+                return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+            default:
+                return 0; // 默认排序，不改变顺序
+        }
+    });
+    
+    // 重新排列商品
+    productItems.forEach(item => {
+        productList.appendChild(item);
+    });
+}
+
+/**
+ * 筛选商品
+ */
+function filterProducts() {
+    const categoryFilter = document.getElementById('category-filter').value;
+    const labelFilter = document.getElementById('label-filter').value;
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    
+    document.querySelectorAll('.product-item').forEach(item => {
+        const category = item.getAttribute('data-category');
+        const label = item.getAttribute('data-label');
+        const name = item.getAttribute('data-name').toLowerCase();
+        
+        let show = true;
+        
+        // 类别筛选
+        if (categoryFilter && category !== categoryFilter) {
+            show = false;
+        }
+        
+        // 标签筛选
+        if (labelFilter && label !== labelFilter) {
+            show = false;
+        }
+        
+        // 搜索筛选
+        if (searchTerm && !name.includes(searchTerm)) {
+            show = false;
+        }
+        
+        // 显示或隐藏商品
+        item.style.display = show ? 'block' : 'none';
+    });
+}
+
+/**
+ * 添加到购物车
+ * @param {string} itemId - 商品ID
+ * @param {string} title - 商品名称
+ * @param {string} price - 商品价格
+ * @param {string} stock - 商品库存
+ */
+function addToCart(itemId, title, price, stock) {
+    // 检查库存
+    if (parseInt(stock) <= 0) {
+        showNotification('该商品库存不足，无法添加到购物车。', 'warning');
+        return;
+    }
+    
+    // 发送AJAX请求添加到购物车
+    fetch(`/add-to-cart/${itemId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            quantity: 1
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // 显示成功提示
+            document.getElementById('added-product-name').textContent = title;
+            const modal = new bootstrap.Modal(document.getElementById('cart-success-modal'));
+            modal.show();
+            
+            // 更新购物车数量
+            updateCartCount(data.cart_count);
+            
+            // 更新库存显示
+            updateStockDisplay(itemId, data.new_stock);
+        } else {
+            showNotification(data.error || '添加到购物车失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error adding to cart:', error);
+        showNotification('添加到购物车时发生错误', 'error');
+    });
+}
+
+/**
+ * 更新购物车数量
+ * @param {number} count - 购物车数量
+ */
+function updateCartCount(count) {
+    const cartCountElements = document.querySelectorAll('.cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = count;
+    });
+}
+
+/**
+ * 更新库存显示
+ * @param {string} itemId - 商品ID
+ * @param {number} newStock - 新库存数量
+ */
+function updateStockDisplay(itemId, newStock) {
+    const stockInfo = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (stockInfo) {
+        const isLowStock = newStock <= 5; // 假设阈值为5
+        
+        if (isLowStock) {
+            stockInfo.innerHTML = `
+                <span class="text-danger small">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    库存: ${newStock}
+                </span>
+            `;
+            
+            // 添加库存不足标签
+            const productCard = stockInfo.closest('.product-card');
+            const positionRelative = productCard.querySelector('.position-relative');
+            
+            // 检查是否已有库存不足标签
+            if (!positionRelative.querySelector('.badge.bg-danger')) {
+                const badge = document.createElement('div');
+                badge.className = 'position-absolute top-0 start-0 p-2';
+                badge.innerHTML = '<span class="badge bg-danger">库存不足</span>';
+                positionRelative.appendChild(badge);
+            }
+        } else {
+            stockInfo.innerHTML = `
+                <span class="text-success small">
+                    <i class="bi bi-check-circle-fill"></i>
+                    库存: ${newStock}
+                </span>
+            `;
+            
+            // 移除库存不足标签
+            const productCard = stockInfo.closest('.product-card');
+            const positionRelative = productCard.querySelector('.position-relative');
+            const lowStockBadge = positionRelative.querySelector('.badge.bg-danger');
+            if (lowStockBadge) {
+                lowStockBadge.parentElement.remove();
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

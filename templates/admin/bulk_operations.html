@@ -1,0 +1,880 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}订单批量操作 - Django电商管理后台{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .order-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        font-size: 0.8rem;
+    }
+    .order-actions {
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    .order-card:hover .order-actions {
+        opacity: 1;
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .bulk-actions {
+        position: sticky;
+        top: 20px;
+    }
+    .order-checkbox {
+        transform: scale(1.2);
+    }
+    .selected-orders-info {
+        background-color: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-9">
+            <h1 class="h3 mb-4">订单批量操作</h1>
+            
+            <!-- 筛选部分 -->
+            <div class="filter-section">
+                <form id="filter-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="status-filter" class="form-label">订单状态</label>
+                        <select id="status-filter" class="form-select">
+                            <option value="">全部状态</option>
+                            <option value="P">待处理</option>
+                            <option value="S">已发货</option>
+                            <option value="D">配送中</option>
+                            <option value="C">已完成</option>
+                            <option value="X">已取消</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date-from" class="form-label">开始日期</label>
+                        <input type="date" id="date-from" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date-to" class="form-label">结束日期</label>
+                        <input type="date" id="date-to" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="search-input" class="form-label">搜索订单</label>
+                        <input type="text" id="search-input" class="form-control" placeholder="订单号或用户名...">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> 筛选订单
+                        </button>
+                        <button type="button" id="reset-filter" class="btn btn-outline-secondary ms-2">
+                            <i class="bi bi-arrow-clockwise"></i> 重置筛选
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 批量选择信息 -->
+            <div class="selected-orders-info d-none" id="selected-orders-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>已选择 <span id="selected-count">0</span> 个订单</strong>
+                    </div>
+                    <div>
+                        <button type="button" id="clear-selection" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> 清除选择
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 订单列表 -->
+            <div id="orders-container">
+                {% for order in orders %}
+                <div class="card mb-3 order-card" data-order-id="{{ order.id }}" data-order-status="{{ order.status }}" data-order-date="{{ order.ordered_date|date:'Y-m-d' }}" data-order-ref="{{ order.ref_code }}" data-order-user="{{ order.user.username }}">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-1 d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input order-checkbox" value="{{ order.id }}">
+                            </div>
+                            <div class="col-md-11">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="card-title">
+                                            订单号: {{ order.ref_code }}
+                                        </h5>
+                                        <p class="card-text">
+                                            <strong>用户:</strong> {{ order.user.username }}<br>
+                                            <strong>下单时间:</strong> {{ order.ordered_date|date:"Y-m-d H:i" }}<br>
+                                            <strong>订单金额:</strong> ¥{{ order.get_total }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="card-text">
+                                            <strong>订单状态:</strong> 
+                                            {% if order.status == 'P' %}
+                                            <span class="badge bg-warning status-badge">待处理</span>
+                                            {% elif order.status == 'S' %}
+                                            <span class="badge bg-info status-badge">已发货</span>
+                                            {% elif order.status == 'D' %}
+                                            <span class="badge bg-primary status-badge">配送中</span>
+                                            {% elif order.status == 'C' %}
+                                            <span class="badge bg-success status-badge">已完成</span>
+                                            {% elif order.status == 'X' %}
+                                            <span class="badge bg-danger status-badge">已取消</span>
+                                            {% endif %}
+                                            <br>
+                                            <strong>商品数量:</strong> {{ order.items.count }}<br>
+                                            <strong>支付方式:</strong> {{ order.get_payment_display }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-center justify-content-end order-actions">
+                                        <a href="{% url 'admin:core_order_change' order.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger view-order-btn" data-order-id="{{ order.id }}" data-order-ref="{{ order.ref_code }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    没有找到符合条件的订单。
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- 分页 -->
+            {% if is_paginated %}
+            <nav aria-label="订单列表分页">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="首页">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="上一页">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="首页">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="上一页">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <a class="page-link" href="#">{{ num }}</a>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="下一页">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="末页">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="下一页">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="末页">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-3">
+            <div class="sticky-top bulk-actions">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">批量操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="bulk-select-all" class="form-label">
+                                <input type="checkbox" id="bulk-select-all" class="form-check-input me-2">
+                                全选当前页
+                            </label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bulk-status" class="form-label">更新订单状态</label>
+                            <select id="bulk-status" class="form-select mb-2">
+                                <option value="">选择新状态</option>
+                                <option value="P">待处理</option>
+                                <option value="S">已发货</option>
+                                <option value="D">配送中</option>
+                                <option value="C">已完成</option>
+                                <option value="X">已取消</option>
+                            </select>
+                            <button type="button" id="bulk-update-status" class="btn btn-primary w-100" disabled>
+                                <i class="bi bi-arrow-repeat"></i> 更新状态
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" id="bulk-export" class="btn btn-success w-100" disabled>
+                                <i class="bi bi-download"></i> 导出订单
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" id="bulk-delete" class="btn btn-danger w-100" disabled>
+                                <i class="bi bi-trash"></i> 删除订单
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle-fill"></i>
+                            选择订单后可进行批量操作。删除订单将无法恢复，请谨慎操作。
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 订单详情模态框触发按钮 -->
+                <div class="card mt-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">快速操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'admin:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-speedometer2"></i> 返回仪表板
+                            </a>
+                            <a href="{% url 'admin:core_order_changelist' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-list-ul"></i> 订单管理
+                            </a>
+                            <a href="{% url 'admin:low-stock-alerts' %}" class="btn btn-outline-warning">
+                                <i class="bi bi-exclamation-triangle"></i> 低库存预警
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单详情模态框 -->
+<div class="modal fade" id="order-detail-modal" tabindex="-1" aria-labelledby="order-detail-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="order-detail-modal-label">订单详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="order-detail-content">
+                <!-- 订单详情将通过AJAX加载 -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <a href="#" id="edit-order-btn" class="btn btn-primary">编辑订单</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量操作确认模态框 -->
+<div class="modal fade" id="bulk-confirm-modal" tabindex="-1" aria-labelledby="bulk-confirm-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulk-confirm-modal-label">确认批量操作</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="bulk-confirm-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" id="bulk-confirm-btn" class="btn btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化订单管理器
+    if (typeof OrderManager !== 'undefined') {
+        window.orderManager = new OrderManager();
+        window.orderManager.initBulkOperations();
+    }
+    
+    // 全选/取消全选
+    const selectAllCheckbox = document.getElementById('bulk-select-all');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    const selectedOrdersInfo = document.getElementById('selected-orders-info');
+    const selectedCount = document.getElementById('selected-count');
+    const bulkActionButtons = document.querySelectorAll('#bulk-update-status, #bulk-export, #bulk-delete');
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        orderCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelectedOrdersInfo();
+    });
+    
+    // 订单复选框变化事件
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedOrdersInfo);
+    });
+    
+    // 更新选中订单信息
+    function updateSelectedOrdersInfo() {
+        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        selectedCount.textContent = count;
+        
+        if (count > 0) {
+            selectedOrdersInfo.classList.remove('d-none');
+            bulkActionButtons.forEach(button => {
+                button.disabled = false;
+            });
+            
+            // 更新全选复选框状态
+            if (count === orderCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = count > 0;
+            }
+        } else {
+            selectedOrdersInfo.classList.add('d-none');
+            bulkActionButtons.forEach(button => {
+                button.disabled = true;
+            });
+            
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    }
+    
+    // 清除选择
+    document.getElementById('clear-selection').addEventListener('click', function() {
+        orderCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectAllCheckbox.checked = false;
+        updateSelectedOrdersInfo();
+    });
+    
+    // 筛选表单提交
+    document.getElementById('filter-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        filterOrders();
+    });
+    
+    // 重置筛选
+    document.getElementById('reset-filter').addEventListener('click', function() {
+        document.getElementById('status-filter').value = '';
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        document.getElementById('search-input').value = '';
+        filterOrders();
+    });
+    
+    // 批量更新状态
+    document.getElementById('bulk-update-status').addEventListener('click', function() {
+        const newStatus = document.getElementById('bulk-status').value;
+        if (!newStatus) {
+            showNotification('请选择新的订单状态', 'warning');
+            return;
+        }
+        
+        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
+        const orderIds = Array.from(checkedBoxes).map(box => box.value);
+        
+        confirmBulkAction(
+            `确定要将选定的 ${orderIds.length} 个订单状态更新为 "${getStatusText(newStatus)}" 吗？`,
+            function() {
+                bulkUpdateOrderStatus(orderIds, newStatus);
+            }
+        );
+    });
+    
+    // 批量导出
+    document.getElementById('bulk-export').addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
+        const orderIds = Array.from(checkedBoxes).map(box => box.value);
+        
+        confirmBulkAction(
+            `确定要导出选定的 ${orderIds.length} 个订单吗？`,
+            function() {
+                bulkExportOrders(orderIds);
+            }
+        );
+    });
+    
+    // 批量删除
+    document.getElementById('bulk-delete').addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('.order-checkbox:checked');
+        const orderIds = Array.from(checkedBoxes).map(box => box.value);
+        
+        confirmBulkAction(
+            `确定要删除选定的 ${orderIds.length} 个订单吗？此操作不可恢复！`,
+            function() {
+                bulkDeleteOrders(orderIds);
+            }
+        );
+    });
+    
+    // 查看订单详情
+    document.querySelectorAll('.view-order-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const orderRef = this.getAttribute('data-order-ref');
+            viewOrderDetail(orderId, orderRef);
+        });
+    });
+});
+
+/**
+ * 筛选订单
+ */
+function filterOrders() {
+    const status = document.getElementById('status-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    
+    document.querySelectorAll('.order-card').forEach(card => {
+        const cardStatus = card.getAttribute('data-order-status');
+        const cardDate = card.getAttribute('data-order-date');
+        const cardRef = card.getAttribute('data-order-ref').toLowerCase();
+        const cardUser = card.getAttribute('data-order-user').toLowerCase();
+        
+        let show = true;
+        
+        // 状态筛选
+        if (status && cardStatus !== status) {
+            show = false;
+        }
+        
+        // 日期筛选
+        if (dateFrom && cardDate < dateFrom) {
+            show = false;
+        }
+        if (dateTo && cardDate > dateTo) {
+            show = false;
+        }
+        
+        // 搜索筛选
+        if (searchTerm && !cardRef.includes(searchTerm) && !cardUser.includes(searchTerm)) {
+            show = false;
+        }
+        
+        // 显示或隐藏订单卡片
+        card.style.display = show ? 'block' : 'none';
+    });
+}
+
+/**
+ * 获取状态文本
+ * @param {string} status - 状态代码
+ * @returns {string} 状态文本
+ */
+function getStatusText(status) {
+    switch (status) {
+        case 'P': return '待处理';
+        case 'S': return '已发货';
+        case 'D': return '配送中';
+        case 'C': return '已完成';
+        case 'X': return '已取消';
+        default: return status;
+    }
+}
+
+/**
+ * 确认批量操作
+ * @param {string} message - 确认消息
+ * @param {Function} callback - 确认后的回调函数
+ */
+function confirmBulkAction(message, callback) {
+    document.getElementById('bulk-confirm-message').textContent = message;
+    const modal = new bootstrap.Modal(document.getElementById('bulk-confirm-modal'));
+    
+    document.getElementById('bulk-confirm-btn').onclick = function() {
+        modal.hide();
+        callback();
+    };
+    
+    modal.show();
+}
+
+/**
+ * 批量更新订单状态
+ * @param {Array} orderIds - 订单ID数组
+ * @param {string} newStatus - 新状态
+ */
+function bulkUpdateOrderStatus(orderIds, newStatus) {
+    fetch('/admin/api/orders/bulk-update/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            order_ids: orderIds,
+            action: 'update_status',
+            status: newStatus
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification(`成功更新 ${data.updated_count} 个订单状态`, 'success');
+            
+            // 更新页面上的订单状态
+            orderIds.forEach(orderId => {
+                const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.setAttribute('data-order-status', newStatus);
+                    const statusBadge = card.querySelector('.status-badge');
+                    if (statusBadge) {
+                        statusBadge.textContent = getStatusText(newStatus);
+                        statusBadge.className = `badge bg-${getStatusBadgeClass(newStatus)} status-badge`;
+                    }
+                }
+            });
+            
+            // 清除选择
+            document.getElementById('clear-selection').click();
+        } else {
+            showNotification(data.error || '批量更新订单状态失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error bulk updating order status:', error);
+        showNotification('批量更新订单状态时发生错误', 'error');
+    });
+}
+
+/**
+ * 批量导出订单
+ * @param {Array} orderIds - 订单ID数组
+ */
+function bulkExportOrders(orderIds) {
+    // 创建表单并提交
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/api/orders/bulk-export/';
+    
+    // 添加CSRF令牌
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = getCookie('csrftoken');
+    form.appendChild(csrfInput);
+    
+    // 添加订单ID
+    const orderIdsInput = document.createElement('input');
+    orderIdsInput.type = 'hidden';
+    orderIdsInput.name = 'order_ids';
+    orderIdsInput.value = JSON.stringify(orderIds);
+    form.appendChild(orderIdsInput);
+    
+    // 提交表单
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    
+    showNotification('订单导出已开始，请稍候下载', 'success');
+}
+
+/**
+ * 批量删除订单
+ * @param {Array} orderIds - 订单ID数组
+ */
+function bulkDeleteOrders(orderIds) {
+    fetch('/admin/api/orders/bulk-delete/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            order_ids: orderIds
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification(`成功删除 ${data.deleted_count} 个订单`, 'success');
+            
+            // 从页面上移除已删除的订单
+            orderIds.forEach(orderId => {
+                const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.remove();
+                }
+            });
+            
+            // 清除选择
+            document.getElementById('clear-selection').click();
+        } else {
+            showNotification(data.error || '批量删除订单失败', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error bulk deleting orders:', error);
+        showNotification('批量删除订单时发生错误', 'error');
+    });
+}
+
+/**
+ * 查看订单详情
+ * @param {string} orderId - 订单ID
+ * @param {string} orderRef - 订单号
+ */
+function viewOrderDetail(orderId, orderRef) {
+    const modal = new bootstrap.Modal(document.getElementById('order-detail-modal'));
+    const modalContent = document.getElementById('order-detail-content');
+    const editButton = document.getElementById('edit-order-btn');
+    
+    // 设置编辑按钮链接
+    editButton.href = `/admin/core/order/${orderId}/change/`;
+    
+    // 显示加载中
+    modalContent.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+        </div>
+    `;
+    
+    // 显示模态框
+    modal.show();
+    
+    // 加载订单详情
+    fetch(`/admin/api/order/${orderId}/detail/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                renderOrderDetail(data.order);
+            } else {
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        ${data.error || '加载订单详情失败'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading order detail:', error);
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    加载订单详情时发生错误
+                </div>
+            `;
+        });
+    
+    /**
+     * 渲染订单详情
+     * @param {Object} order - 订单数据
+     */
+    function renderOrderDetail(order) {
+        let statusBadgeClass = '';
+        let statusText = '';
+        
+        switch (order.status) {
+            case 'P':
+                statusBadgeClass = 'bg-warning';
+                statusText = '待处理';
+                break;
+            case 'S':
+                statusBadgeClass = 'bg-info';
+                statusText = '已发货';
+                break;
+            case 'D':
+                statusBadgeClass = 'bg-primary';
+                statusText = '配送中';
+                break;
+            case 'C':
+                statusBadgeClass = 'bg-success';
+                statusText = '已完成';
+                break;
+            case 'X':
+                statusBadgeClass = 'bg-danger';
+                statusText = '已取消';
+                break;
+        }
+        
+        let itemsHtml = '';
+        order.items.forEach(item => {
+            itemsHtml += `
+                <tr>
+                    <td>${item.title}</td>
+                    <td>¥${item.price}</td>
+                    <td>${item.quantity}</td>
+                    <td>¥${(parseFloat(item.price) * parseInt(item.quantity)).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        modalContent.innerHTML = `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6>订单信息</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>订单号:</strong></td>
+                            <td>${order.ref_code}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>用户:</strong></td>
+                            <td>${order.username}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>下单时间:</strong></td>
+                            <td>${order.ordered_date}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>订单状态:</strong></td>
+                            <td><span class="badge ${statusBadgeClass}">${statusText}</span></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>支付与配送</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>支付方式:</strong></td>
+                            <td>${order.payment_method}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>配送地址:</strong></td>
+                            <td>${order.shipping_address || '未设置'}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>联系电话:</strong></td>
+                            <td>${order.phone || '未设置'}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>订单总额:</strong></td>
+                            <td class="text-primary fw-bold">¥${order.total}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <h6>商品列表</h6>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>商品名称</th>
+                            <th>单价</th>
+                            <th>数量</th>
+                            <th>小计</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">总计:</th>
+                            <th class="text-primary">¥${order.total}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+    }
+}
+
+/**
+ * 获取状态徽章类名
+ * @param {string} status - 状态代码
+ * @returns {string} 徽章类名
+ */
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'P': return 'warning';
+        case 'S': return 'info';
+        case 'D': return 'primary';
+        case 'C': return 'success';
+        case 'X': return 'danger';
+        default: return 'secondary';
+    }
+}
+</script>
+{% endblock %}

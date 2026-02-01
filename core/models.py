@@ -23,6 +23,14 @@ ADDRESS_CHOICES = (
     ('S', 'Shipping'),
 )
 
+ORDER_STATUS_CHOICES = (
+    ('P', 'Pending'),
+    ('S', 'Shipped'),
+    ('D', 'Delivering'),
+    ('C', 'Completed'),
+    ('X', 'Cancelled'),
+)
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -43,6 +51,8 @@ class Item(models.Model):
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField()
+    stock = models.IntegerField(default=0)
+    stock_threshold = models.IntegerField(default=10)
 
     def __str__(self):
         return self.title
@@ -61,6 +71,9 @@ class Item(models.Model):
         return reverse("core:remove-from-cart", kwargs={
             'slug': self.slug
         })
+
+    def is_low_stock(self):
+        return self.stock <= self.stock_threshold
 
 
 class OrderItem(models.Model):
@@ -96,6 +109,7 @@ class Order(models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
+    status = models.CharField(choices=ORDER_STATUS_CHOICES, max_length=1, default='P')
     shipping_address = models.ForeignKey(
         'Address', related_name='shipping_address', on_delete=models.SET_NULL, blank=True, null=True)
     billing_address = models.ForeignKey(
@@ -130,6 +144,9 @@ class Order(models.Model):
         if self.coupon:
             total -= self.coupon.amount
         return total
+
+    def can_cancel(self):
+        return self.status == 'P'
 
 
 class Address(models.Model):

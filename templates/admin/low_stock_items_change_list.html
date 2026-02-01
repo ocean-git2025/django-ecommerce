@@ -1,0 +1,17 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a href="/admin/core/item/" class="button">
+      View All Items
+    </a>
+  </li>
+{% endblock %}
+
+{% block content %}
+  <div class="alert alert-warning" role="alert">
+    <strong>Warning:</strong> There are {{ low_stock_count }} items with low stock levels. Please consider restocking soon.
+  </div>
+  {{ block.super }}
+{% endblock %}

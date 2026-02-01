@@ -1,28 +1,76 @@
-{% extends "account/base.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load crispy_forms_tags %}
 
 {% block head_title %}{% trans "Signup" %}{% endblock %}
 
 {% block content %}
-  <main>
+  <main class="mt-5 pt-4">
     <div class="container">
       <section class="mb-4">
         <div class="row wow fadeIn">
-          <div class='col-6 offset-3'>
-            <h1>{% trans "Sign Up" %}</h1>
-            <p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
-            <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
-              {% csrf_token %}
-              {{ form|crispy }}
-              {% if redirect_field_value %}
-              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-              {% endif %}
-              <button class='btn btn-primary' type="submit">{% trans "Sign Up" %} &raquo;</button>
-            </form>
+          <div class="col-lg-6 col-md-8 mx-auto">
+            <!-- Card -->
+            <div class="card">
+
+              <!-- Card body -->
+              <div class="card-body">
+
+                <!-- Material form register -->
+                <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
+                  {% csrf_token %}
+                  
+                  <p class="h4 text-center mb-4">{% trans "Sign Up" %}</p>
+
+                  <!-- Material input email -->
+                  <div class="md-form">
+                    <i class="fas fa-envelope prefix grey-text"></i>
+                    <input type="email" id="materialFormRegisterEmail" name="email" class="form-control" required>
+                    <label for="materialFormRegisterEmail">{% trans "E-mail" %}</label>
+                  </div>
+
+                  <!-- Material input username -->
+                  <div class="md-form">
+                    <i class="fas fa-user prefix grey-text"></i>
+                    <input type="text" id="materialFormRegisterUsername" name="username" class="form-control" required>
+                    <label for="materialFormRegisterUsername">{% trans "Username" %}</label>
+                  </div>
+
+                  <!-- Material input password -->
+                  <div class="md-form">
+                    <i class="fas fa-lock prefix grey-text"></i>
+                    <input type="password" id="materialFormRegisterPassword" name="password1" class="form-control" required>
+                    <label for="materialFormRegisterPassword">{% trans "Password" %}</label>
+                  </div>
+
+                  <!-- Material input confirm password -->
+                  <div class="md-form">
+                    <i class="fas fa-lock prefix grey-text"></i>
+                    <input type="password" id="materialFormRegisterConfirmPassword" name="password2" class="form-control" required>
+                    <label for="materialFormRegisterConfirmPassword">{% trans "Confirm Password" %}</label>
+                  </div>
+
+                  {% if redirect_field_value %}
+                  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                  {% endif %}
+
+                  <!-- Sign up button -->
+                  <button class="btn btn-info btn-rounded btn-block my-4 waves-effect z-depth-0" type="submit">{% trans "Sign Up" %}</button>
+
+                  <!-- Login -->
+                  <p>{% trans "Already have an account?" %} <a href="{{ login_url }}">{% trans "Login" %}</a></p>
+
+                </form>
+                <!-- Material form register -->
+
+              </div>
+
+            </div>
+            <!-- Card -->
           </div>
         </div>
       </section>
     </div>
   </main>
+
 {% endblock %}

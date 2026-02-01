@@ -372,30 +372,49 @@ class ItemDetailView(DetailView):
 @login_required
 def add_to_cart(request, slug):
     item = get_object_or_404(Item, slug=slug)
+    
+    # Get quantity from form, default to 1 if not provided
+    quantity = int(request.POST.get('quantity', 1))
+    
+    # Check if there's enough stock
+    if item.stock < quantity:
+        messages.info(request, f"Not enough stock available. Only {item.stock} items left.")
+        return redirect("core:product", slug=slug)
+    
     order_item, created = OrderItem.objects.get_or_create(
         item=item,
         user=request.user,
         ordered=False
     )
+    
     order_qs = Order.objects.filter(user=request.user, ordered=False)
     if order_qs.exists():
         order = order_qs[0]
         # check if the order item is in the order
         if order.items.filter(item__slug=item.slug).exists():
-            order_item.quantity += 1
+            # Check if adding the quantity would exceed stock
+            if order_item.quantity + quantity > item.stock:
+                messages.info(request, f"Not enough stock available. Only {item.stock} items left.")
+                return redirect("core:product", slug=slug)
+            
+            order_item.quantity += quantity
             order_item.save()
-            messages.info(request, "This item quantity was updated.")
+            messages.info(request, f"This item quantity was updated by {quantity}.")
             return redirect("core:order-summary")
         else:
+            order_item.quantity = quantity
+            order_item.save()
             order.items.add(order_item)
-            messages.info(request, "This item was added to your cart.")
+            messages.info(request, f"{quantity} items were added to your cart.")
             return redirect("core:order-summary")
     else:
+        order_item.quantity = quantity
+        order_item.save()
         ordered_date = timezone.now()
         order = Order.objects.create(
             user=request.user, ordered_date=ordered_date)
         order.items.add(order_item)
-        messages.info(request, "This item was added to your cart.")
+        messages.info(request, f"{quantity} items were added to your cart.")
         return redirect("core:order-summary")
 
 
@@ -517,3 +536,73 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+class OrderDetailView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        try:
+            order = Order.objects.get(ref_code=kwargs.get('ref_code'))
+            if order.user != self.request.user:
+                messages.warning(self.request, "You don't have permission to view this order")
+                return redirect("core:home")
+            context = {
+                'order': order
+            }
+            return render(self.request, "order_detail.html", context)
+        except ObjectDoesNotExist:
+            messages.warning(self.request, "This order does not exist.")
+            return redirect("core:home")
+
+
+@login_required
+def cancel_order(request, ref_code):
+    try:
+        order = Order.objects.get(ref_code=ref_code)
+        if order.user != request.user:
+            messages.warning(request, "You don't have permission to cancel this order")
+            return redirect("core:home")
+        
+        if order.can_cancel():
+            order.status = 'X'
+            order.save()
+            messages.success(request, "Your order has been cancelled successfully")
+        else:
+            messages.warning(request, "This order cannot be cancelled")
+        
+        return redirect("core:order-detail", ref_code=ref_code)
+    except ObjectDoesNotExist:
+        messages.warning(request, "This order does not exist.")
+        return redirect("core:home")
+
+
+class OrderHistoryView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        orders = Order.objects.filter(user=self.request.user, ordered=True).order_by('-ordered_date')
+        context = {
+            'orders': orders
+        }
+        return render(self.request, "order_history.html", context)
+
+
+class ProfileView(LoginRequiredMixin, View):
+    def get(self, *args, **kwargs):
+        # Get user's order history
+        orders = Order.objects.filter(user=self.request.user, ordered=True).order_by('-ordered_date')
+        
+        # Get all items with stock information
+        items = Item.objects.all().order_by('title')
+        
+        # Separate items by stock status
+        low_stock_items = [item for item in items if item.is_low_stock]
+        out_of_stock_items = items.filter(stock=0)
+        
+        context = {
+            'orders': orders,
+            'items': items,
+            'low_stock_items': low_stock_items,
+            'out_of_stock_items': out_of_stock_items,
+            'total_orders': orders.count(),
+            'pending_orders': orders.filter(status='P').count(),
+            'completed_orders': orders.filter(status='C').count(),
+        }
+        return render(self.request, "profile.html", context)

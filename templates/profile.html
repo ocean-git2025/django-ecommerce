@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block head_title %}
+个人中心
+{% endblock %}
+
+{% block content %}
+<main>
+  <div class="container mt-5">
+    <div class="row">
+      <!-- 左侧导航栏 -->
+      <div class="col-md-3 mb-4">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">个人中心</h5>
+          </div>
+          <div class="list-group list-group-flush">
+            <a href="#overview" class="list-group-item list-group-item-action active" data-toggle="pill">
+              <i class="fas fa-tachometer-alt mr-2"></i>概览
+            </a>
+            <a href="#orders" class="list-group-item list-group-item-action" data-toggle="pill">
+              <i class="fas fa-shopping-bag mr-2"></i>订单历史
+            </a>
+            <a href="#inventory" class="list-group-item list-group-item-action" data-toggle="pill">
+              <i class="fas fa-boxes mr-2"></i>库存查看
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧内容区 -->
+      <div class="col-md-9">
+        <div class="tab-content">
+          <!-- 概览标签页 -->
+          <div class="tab-pane fade show active" id="overview">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">账户概览</h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4 mb-4">
+                    <div class="card text-center">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-shopping-cart text-primary fa-2x"></i>
+                        </h5>
+                        <h2 class="text-primary">{{ total_orders }}</h2>
+                        <p class="card-text">总订单数</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-4">
+                    <div class="card text-center">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-clock text-warning fa-2x"></i>
+                        </h5>
+                        <h2 class="text-warning">{{ pending_orders }}</h2>
+                        <p class="card-text">待处理订单</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4 mb-4">
+                    <div class="card text-center">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </h5>
+                        <h2 class="text-success">{{ completed_orders }}</h2>
+                        <p class="card-text">已完成订单</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="row mt-4">
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="mb-0">库存预警</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <span>低库存商品</span>
+                          <span class="badge badge-warning">{{ low_stock_items.count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <span>缺货商品</span>
+                          <span class="badge badge-danger">{{ out_of_stock_items.count }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="mb-0">快速操作</h6>
+                      </div>
+                      <div class="card-body">
+                        <a href="{% url 'core:home' %}" class="btn btn-primary btn-sm mb-2">
+                          <i class="fas fa-shopping-cart mr-1"></i> 继续购物
+                        </a>
+                        <a href="#orders" class="btn btn-info btn-sm mb-2" data-toggle="pill">
+                          <i class="fas fa-list mr-1"></i> 查看订单
+                        </a>
+                        <a href="#inventory" class="btn btn-warning btn-sm mb-2" data-toggle="pill">
+                          <i class="fas fa-boxes mr-1"></i> 查看库存
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 订单历史标签页 -->
+          <div class="tab-pane fade" id="orders">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">订单历史</h5>
+              </div>
+              <div class="card-body">
+                {% if orders %}
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>订单编号</th>
+                        <th>日期</th>
+                        <th>状态</th>
+                        <th>总金额</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                              {% for order in orders %}
+                              <tr data-order-ref="{{ order.ref_code }}">
+                                <td>{{ order.ref_code }}</td>
+                                <td>{{ order.ordered_date|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                  <span id="order-status-{{ order.ref_code }}" class="badge">
+                                    {% if order.status == 'P' %}
+                                      <span class="badge badge-warning">待处理</span>
+                                    {% elif order.status == 'S' %}
+                                      <span class="badge badge-info">已发货</span>
+                                    {% elif order.status == 'D' %}
+                                      <span class="badge badge-primary">配送中</span>
+                                    {% elif order.status == 'C' %}
+                                      <span class="badge badge-success">已完成</span>
+                                    {% elif order.status == 'X' %}
+                                      <span class="badge badge-danger">已取消</span>
+                                    {% endif %}
+                                  </span>
+                                </td>
+                                <td>${{ order.get_total }}</td>
+                                <td>
+                                  <a href="{% url 'core:order-detail' order.ref_code %}" class="btn btn-sm btn-primary">
+                                    查看详情
+                                  </a>
+                                  {% if order.status == 'P' %}
+                                  <a href="{% url 'core:cancel-order' order.ref_code %}" id="cancel-order-{{ order.ref_code }}" class="btn btn-sm btn-danger">
+                                    取消订单
+                                  </a>
+                                  {% endif %}
+                                </td>
+                              </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                  您还没有任何订单。<a href="{% url 'core:home' %}">立即开始购物！</a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <!-- 库存查看标签页 -->
+          <div class="tab-pane fade" id="inventory">
+            <div class="card">
+              <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">库存查看</h5>
+              </div>
+              <div class="card-body">
+                <!-- 缺货商品 -->
+                {% if out_of_stock_items %}
+                <div class="mb-4">
+                  <h6 class="text-danger mb-3">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>缺货商品 ({{ out_of_stock_items.count }})
+                  </h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                      <thead class="thead-light">
+                        <tr>
+                          <th>商品名称</th>
+                          <th>分类</th>
+                          <th>价格</th>
+                          <th>库存</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for item in out_of_stock_items %}
+                        <tr class="table-danger">
+                          <td>{{ item.title }}</td>
+                          <td>{{ item.get_category_display }}</td>
+                          <td>
+                            {% if item.discount_price %}
+                              <span class="text-decoration-line-through">${{ item.price }}</span>
+                              <span class="text-danger">${{ item.discount_price }}</span>
+                            {% else %}
+                              ${{ item.price }}
+                            {% endif %}
+                          </td>
+                          <td>
+                            <span class="badge badge-danger">{{ item.stock }}</span>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                {% endif %}
+                
+                <!-- 低库存商品 -->
+                {% if low_stock_items %}
+                <div class="mb-4">
+                  <h6 class="text-warning mb-3">
+                    <i class="fas fa-exclamation-circle mr-2"></i>低库存商品 ({{ low_stock_items.count }})
+                  </h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                      <thead class="thead-light">
+                        <tr>
+                          <th>商品名称</th>
+                          <th>分类</th>
+                          <th>价格</th>
+                          <th>库存</th>
+                          <th>预警阈值</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for item in low_stock_items %}
+                        <tr class="table-warning">
+                          <td>{{ item.title }}</td>
+                          <td>{{ item.get_category_display }}</td>
+                          <td>
+                            {% if item.discount_price %}
+                              <span class="text-decoration-line-through">${{ item.price }}</span>
+                              <span class="text-danger">${{ item.discount_price }}</span>
+                            {% else %}
+                              ${{ item.price }}
+                            {% endif %}
+                          </td>
+                          <td>
+                            <span class="badge badge-warning">{{ item.stock }}</span>
+                          </td>
+                          <td>{{ item.stock_threshold }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                {% endif %}
+                
+                <!-- 正常库存商品 -->
+                <div>
+                  <h6 class="text-success mb-3">
+                    <i class="fas fa-check-circle mr-2"></i>正常库存商品
+                  </h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                      <thead class="thead-light">
+                        <tr>
+                          <th>商品名称</th>
+                          <th>分类</th>
+                          <th>价格</th>
+                          <th>库存</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for item in items %}
+                          {% if not item.is_low_stock and item.stock > 0 %}
+                          <tr>
+                            <td>{{ item.title }}</td>
+                            <td>{{ item.get_category_display }}</td>
+                            <td>
+                              {% if item.discount_price %}
+                                <span class="text-decoration-line-through">${{ item.price }}</span>
+                                <span class="text-danger">${{ item.discount_price }}</span>
+                              {% else %}
+                                ${{ item.price }}
+                              {% endif %}
+                            </td>
+                            <td>
+                              <span class="badge badge-success">{{ item.stock }}</span>
+                            </td>
+                          </tr>
+                          {% endif %}
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// JavaScript for tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle tab clicks
+  const tabLinks = document.querySelectorAll('.list-group-item[data-toggle="pill"]');
+  
+  tabLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // Remove active class from all tabs
+      tabLinks.forEach(function(tab) {
+        tab.classList.remove('active');
+      });
+      
+      // Add active class to clicked tab
+      this.classList.add('active');
+      
+      // Get target tab pane
+      const targetId = this.getAttribute('href');
+      
+      // Hide all tab panes
+      const tabPanes = document.querySelectorAll('.tab-pane');
+      tabPanes.forEach(function(pane) {
+        pane.classList.remove('show', 'active');
+      });
+      
+      // Show target tab pane
+      const targetPane = document.querySelector(targetId);
+      if (targetPane) {
+        targetPane.classList.add('show', 'active');
+      }
+    });
+  });
+});
+</script>
+{% endblock content %}

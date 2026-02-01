@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block head_title %}
+Order Details - {{ order.ref_code }}
+{% endblock %}
+
+{% block content %}
+<main>
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-12">
+        <h2 class="mb-4">Order Details</h2>
+        
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h5>Order Information</h5>
+                <p><strong>Order Reference:</strong> {{ order.ref_code }}</p>
+                <p><strong>Order Date:</strong> {{ order.ordered_date }}</p>
+                <p><strong>Status:</strong> 
+                  {% if order.status == 'P' %}
+                    <span class="badge badge-warning">Pending</span>
+                  {% elif order.status == 'S' %}
+                    <span class="badge badge-info">Shipped</span>
+                  {% elif order.status == 'D' %}
+                    <span class="badge badge-primary">Delivering</span>
+                  {% elif order.status == 'C' %}
+                    <span class="badge badge-success">Completed</span>
+                  {% elif order.status == 'X' %}
+                    <span class="badge badge-danger">Cancelled</span>
+                  {% endif %}
+                </p>
+              </div>
+              <div class="col-md-6">
+                {% if order.can_cancel %}
+                  <a href="{% url 'core:cancel-order' order.ref_code %}" class="btn btn-danger float-right" onclick="return confirm('Are you sure you want to cancel this order?')">
+                    <i class="fas fa-times"></i> Cancel Order
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5>Order Items</h5>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order_item in order.items.all %}
+                <tr>
+                  <td>
+                    <strong>{{ order_item.item.title }}</strong><br>
+                    <small class="text-muted">{{ order_item.item.description|truncatewords:10 }}</small>
+                  </td>
+                  <td>
+                    {% if order_item.item.discount_price %}
+                      <span class="text-muted"><del>${{ order_item.item.price }}</del></span>
+                      <span class="text-success">${{ order_item.item.discount_price }}</span>
+                    {% else %}
+                      ${{ order_item.item.price }}
+                    {% endif %}
+                  </td>
+                  <td>{{ order_item.quantity }}</td>
+                  <td>${{ order_item.get_final_price }}</td>
+                </tr>
+                {% endfor %}
+                {% if order.coupon %}
+                <tr>
+                  <td colspan="3"><strong>Coupon ({{ order.coupon.code }})</strong></td>
+                  <td><span class="text-success">-${{ order.coupon.amount }}</span></td>
+                </tr>
+                {% endif %}
+                <tr class="table-active">
+                  <td colspan="3"><strong>Total</strong></td>
+                  <td><strong>${{ order.get_total }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if order.shipping_address %}
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5>Shipping Address</h5>
+            <p>
+              {{ order.shipping_address.street_address }}<br>
+              {% if order.shipping_address.apartment_address %}
+                {{ order.shipping_address.apartment_address }}<br>
+              {% endif %}
+              {{ order.shipping_address.country }}<br>
+              {{ order.shipping_address.zip }}
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if order.billing_address %}
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5>Billing Address</h5>
+            <p>
+              {{ order.billing_address.street_address }}<br>
+              {% if order.billing_address.apartment_address %}
+                {{ order.billing_address.apartment_address }}<br>
+              {% endif %}
+              {{ order.billing_address.country }}<br>
+              {{ order.billing_address.zip }}
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
+        <a href="{% url 'core:home' %}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock content %}
