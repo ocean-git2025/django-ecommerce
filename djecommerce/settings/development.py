@@ -1,13 +1,16 @@
 from .base import *
+import sys
 
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1']
 
-INSTALLED_APPS += [
-    'debug_toolbar'
-]
+TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
 
-MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
+if not TESTING:
+    INSTALLED_APPS += [
+        'debug_toolbar'
+    ]
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
 
 # DEBUG TOOLBAR SETTINGS
 
@@ -33,7 +36,8 @@ def show_toolbar(request):
 
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': False,
-    'SHOW_TOOLBAR_CALLBACK': show_toolbar
+    'SHOW_TOOLBAR_CALLBACK': show_toolbar,
+    'IS_RUNNING_TESTS': True
 }
 
 DATABASES = {
