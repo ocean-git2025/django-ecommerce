@@ -22,18 +22,27 @@
           <!-- Links -->
           <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-              <a class="nav-link" href="#">All
+              <a class="nav-link" href="/">All
                 <span class="sr-only">(current)</span>
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">Shirts</a>
+              <a class="nav-link" href="?category=S">Shirts</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">Sport wears</a>
+              <a class="nav-link" href="?category=SW">Sport wears</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#">Outwears</a>
+              <a class="nav-link" href="?category=OW">Outwears</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="?category=C">服装</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="?category=A">配饰</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="?category=E">数码</a>
             </li>
 
           </ul>
@@ -43,6 +52,18 @@
             <div class="md-form my-0">
               <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
             </div>
+          </form>
+
+          <form class="form-inline ml-2">
+            <select class="browser-default custom-select" name="category" onchange="this.form.submit()">
+              <option value="">全部分类</option>
+              <option value="S" {% if selected_category == 'S' %}selected{% endif %}>Shirts</option>
+              <option value="SW" {% if selected_category == 'SW' %}selected{% endif %}>Sport wears</option>
+              <option value="OW" {% if selected_category == 'OW' %}selected{% endif %}>Outwears</option>
+              <option value="C" {% if selected_category == 'C' %}selected{% endif %}>服装</option>
+              <option value="A" {% if selected_category == 'A' %}selected{% endif %}>配饰</option>
+              <option value="E" {% if selected_category == 'E' %}selected{% endif %}>数码</option>
+            </select>
           </form>
         </div>
         <!-- Collapsible content -->
@@ -109,7 +130,7 @@
 
           {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
               <span class="sr-only">Previous</span>
             </a>
@@ -117,14 +138,14 @@
           {% endif %}
 
           <li class="page-item active">
-            <a class="page-link" href="?page={{ page_obj.number }}">{{ page_obj.number }}
+            <a class="page-link" href="?page={{ page_obj.number }}{% if selected_category %}&category={{ selected_category }}{% endif %}">{{ page_obj.number }}
               <span class="sr-only">(current)</span>
             </a>
           </li>
 
           {% if page_obj.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>
               <span class="sr-only">Next</span>
             </a>
