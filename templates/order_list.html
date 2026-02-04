@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <main class="order-list-page">
+    <div class="container py-5">
+      <!-- 页面标题 -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 font-weight-bold">
+          <i class="fas fa-clipboard-list text-primary mr-2"></i>我的订单
+        </h2>
+        <a href="/" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-shopping-bag mr-1"></i>继续购物
+        </a>
+      </div>
+
+      {% if orders %}
+        <!-- 订单统计卡片 -->
+        <div class="row mb-4">
+          <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card border-left-primary shadow-sm h-100 py-2">
+              <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                  <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">全部订单</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ orders|length }}</div>
+                  </div>
+                  <div class="col-auto">
+                    <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-primary">订单列表</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="orderTable">
+                <thead class="bg-light">
+                  <tr>
+                    <th class="py-3 px-4 border-0 font-weight-bold text-muted" style="width: 15%;">订单号</th>
+                    <th class="py-3 px-4 border-0 font-weight-bold text-muted" style="width: 18%;">下单时间</th>
+                    <th class="py-3 px-4 border-0 font-weight-bold text-muted" style="width: 12%;">订单状态</th>
+                    <th class="py-3 px-4 border-0 font-weight-bold text-muted" style="width: 12%;">总金额</th>
+                    <th class="py-3 px-4 border-0 font-weight-bold text-muted text-center" style="width: 20%;">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for order in orders %}
+                    <tr class="order-row" data-order-id="{{ order.ref_code }}">
+                      <td class="py-3 px-4 align-middle">
+                        <span class="font-weight-bold text-dark">{{ order.ref_code }}</span>
+                      </td>
+                      <td class="py-3 px-4 align-middle text-muted">
+                        <i class="far fa-clock mr-1"></i>{{ order.ordered_date|date:"Y-m-d H:i" }}
+                      </td>
+                      <td class="py-3 px-4 align-middle">
+                        {% if order.cancelled %}
+                          <span class="badge badge-pill badge-secondary px-3 py-2">
+                            <i class="fas fa-ban mr-1"></i>已取消
+                          </span>
+                        {% elif order.status == 'pending' %}
+                          <span class="badge badge-pill badge-warning px-3 py-2">
+                            <i class="fas fa-hourglass-half mr-1"></i>待处理
+                          </span>
+                        {% elif order.status == 'shipped' %}
+                          <span class="badge badge-pill badge-info px-3 py-2">
+                            <i class="fas fa-shipping-fast mr-1"></i>已发货
+                          </span>
+                        {% elif order.status == 'delivering' %}
+                          <span class="badge badge-pill badge-primary px-3 py-2">
+                            <i class="fas fa-truck mr-1"></i>配送中
+                          </span>
+                        {% elif order.status == 'completed' %}
+                          <span class="badge badge-pill badge-success px-3 py-2">
+                            <i class="fas fa-check-circle mr-1"></i>已完成
+                          </span>
+                        {% endif %}
+                      </td>
+                      <td class="py-3 px-4 align-middle">
+                        <span class="font-weight-bold text-primary">${{ order.get_total }}</span>
+                      </td>
+                      <td class="py-3 px-4 align-middle text-center">
+                        <div class="btn-group" role="group">
+                          <a href="{% url 'core:order-detail' order.ref_code %}" 
+                             class="btn btn-outline-primary btn-sm action-btn"
+                             data-loading-text="<i class='fas fa-spinner fa-spin'></i>">
+                            <i class="fas fa-eye mr-1"></i>查看详情
+                          </a>
+                          {% if order.can_cancel %}
+                            <button type="button" 
+                                    class="btn btn-outline-danger btn-sm action-btn ml-2"
+                                    onclick="showCancelModal('{{ order.ref_code }}', '{{ order.get_total }}')"
+                                    data-loading-text="<i class='fas fa-spinner fa-spin'></i>">
+                              <i class="fas fa-times-circle mr-1"></i>取消订单
+                            </button>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <!-- 空状态 -->
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <div class="mb-4">
+              <i class="fas fa-shopping-basket fa-4x text-muted"></i>
+            </div>
+            <h4 class="text-muted mb-3">您还没有任何订单</h4>
+            <p class="text-muted mb-4">快去选购心仪的商品吧！</p>
+            <a href="/" class="btn btn-primary btn-lg px-5">
+              <i class="fas fa-shopping-bag mr-2"></i>去购物
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- 取消订单确认弹窗 -->
+  <div class="modal fade" id="cancelOrderModal" tabindex="-1" role="dialog" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-danger text-white border-0">
+          <h5 class="modal-title font-weight-bold" id="cancelOrderModalLabel">
+            <i class="fas fa-exclamation-triangle mr-2"></i>确认取消订单
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body py-4">
+          <div class="text-center mb-4">
+            <div class="rounded-circle bg-danger-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+              <i class="fas fa-question fa-3x text-danger"></i>
+            </div>
+            <h5 class="font-weight-bold mb-2">确定要取消此订单吗？</h5>
+            <p class="text-muted mb-0">订单号: <span id="cancelOrderId" class="font-weight-bold"></span></p>
+            <p class="text-muted">订单金额: <span id="cancelOrderAmount" class="font-weight-bold text-primary"></span></p>
+          </div>
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle mr-2"></i>取消后订单将无法恢复，已支付的金额将原路退回。
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center pb-4">
+          <button type="button" class="btn btn-light btn-lg px-4" data-dismiss="modal">
+            <i class="fas fa-times mr-1"></i>再想想
+          </button>
+          <a href="#" id="confirmCancelBtn" class="btn btn-danger btn-lg px-4">
+            <i class="fas fa-check mr-1"></i>确认取消
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading 遮罩 -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p class="mt-3 text-primary font-weight-bold">处理中...</p>
+    </div>
+  </div>
+
+  <style>
+    .order-list-page {
+      background-color: #f8f9fc;
+      min-height: calc(100vh - 60px);
+    }
+    .border-left-primary {
+      border-left: 4px solid #4e73df !important;
+    }
+    .bg-danger-light {
+      background-color: rgba(231, 74, 59, 0.1);
+    }
+    .action-btn {
+      transition: all 0.3s ease;
+      min-width: 90px;
+    }
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .order-row {
+      transition: background-color 0.2s ease;
+    }
+    .order-row:hover {
+      background-color: #f8f9fa !important;
+    }
+    .badge-pill {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-content {
+      text-align: center;
+    }
+  </style>
+
+  <script>
+    // 显示取消订单弹窗
+    function showCancelModal(orderId, orderAmount) {
+      document.getElementById('cancelOrderId').textContent = orderId;
+      document.getElementById('cancelOrderAmount').textContent = '$' + orderAmount;
+      document.getElementById('confirmCancelBtn').href = '/order/' + orderId + '/cancel/';
+      $('#cancelOrderModal').modal('show');
+    }
+
+    // 页面加载动画
+    $(document).ready(function() {
+      // 为所有按钮添加 loading 效果
+      $('.action-btn').on('click', function(e) {
+        var $btn = $(this);
+        var originalText = $btn.html();
+        var loadingText = $btn.data('loading-text') || '<i class="fas fa-spinner fa-spin"></i>';
+        
+        $btn.html(loadingText + ' 处理中...');
+        $btn.prop('disabled', true);
+        
+        // 显示 loading 遮罩
+        $('#loadingOverlay').fadeIn(200);
+        
+        // 恢复按钮状态（如果页面没有跳转）
+        setTimeout(function() {
+          $btn.html(originalText);
+          $btn.prop('disabled', false);
+          $('#loadingOverlay').fadeOut(200);
+        }, 3000);
+      });
+
+      // 确认取消按钮 loading
+      $('#confirmCancelBtn').on('click', function(e) {
+        $('#cancelOrderModal').modal('hide');
+        $('#loadingOverlay').fadeIn(200);
+      });
+    });
+  </script>
+{% endblock content %}

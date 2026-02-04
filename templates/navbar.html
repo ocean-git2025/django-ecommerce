@@ -1,11 +1,12 @@
 {% load cart_template_tags %}
 
-<nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
+<nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar shadow-sm">
     <div class="container">
 
       <!-- Brand -->
-      <a class="navbar-brand waves-effect" href="/">
-        <strong class="blue-text">DJe-commerce</strong>
+      <a class="navbar-brand waves-effect d-flex align-items-center" href="/">
+        <i class="fas fa-store text-primary mr-2"></i>
+        <strong class="blue-text font-weight-bold">DJe-commerce</strong>
       </a>
 
       <!-- Collapse -->
@@ -19,41 +20,74 @@
 
         <!-- Left -->
         <ul class="navbar-nav mr-auto">
-          {% comment %} <li class="nav-item active">
-            <a class="nav-link waves-effect" href="/">Home
-              <span class="sr-only">(current)</span>
+          <li class="nav-item">
+            <a class="nav-link waves-effect d-flex align-items-center" href="/">
+              <i class="fas fa-home mr-1"></i>
+              <span class="clearfix d-none d-sm-inline-block">首页</span>
             </a>
           </li>
+          {% if request.user.is_authenticated %}
           <li class="nav-item">
-            <a class="nav-link waves-effect" href="/checkout">
-            Checkout</a>
-          </li> {% endcomment %}
+            <a class="nav-link waves-effect d-flex align-items-center" href="{% url 'core:order-list' %}">
+              <i class="fas fa-clipboard-list mr-1"></i>
+              <span class="clearfix d-none d-sm-inline-block">我的订单</span>
+            </a>
+          </li>
+          {% endif %}
         </ul>
 
         <!-- Right -->
-        <ul class="navbar-nav nav-flex-icons">
+        <ul class="navbar-nav nav-flex-icons align-items-center">
           {% if request.user.is_authenticated %}
-          <li class="nav-item">
-            <a href="{% url 'core:order-summary' %}" class="nav-link waves-effect">
-              <span class="badge red z-depth-1 mr-1"> {{ request.user|cart_item_count }} </span>
-              <i class="fas fa-shopping-cart"></i>
-              <span class="clearfix d-none d-sm-inline-block"> Cart </span>
+          <!-- 购物车 -->
+          <li class="nav-item mr-2">
+            <a href="{% url 'core:order-summary' %}" class="nav-link waves-effect d-flex align-items-center position-relative px-3 py-2 rounded-pill bg-light">
+              <span class="badge badge-danger z-depth-1 mr-2" style="font-size: 0.75rem;"> 
+                {{ request.user|cart_item_count }} 
+              </span>
+              <i class="fas fa-shopping-cart text-primary mr-1"></i>
+              <span class="clearfix d-none d-sm-inline-block font-weight-bold text-dark">购物车</span>
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link waves-effect" href="{% url 'account_logout' %}">
-              <span class="clearfix d-none d-sm-inline-block"> Logout </span>
+          
+          <!-- 用户下拉菜单 -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle waves-effect d-flex align-items-center px-3 py-2" 
+               href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <div class="user-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2" 
+                   style="width: 32px; height: 32px; font-size: 14px;">
+                {{ request.user.username|first|upper }}
+              </div>
+              <span class="clearfix d-none d-sm-inline-block font-weight-bold">{{ request.user.username }}</span>
             </a>
+            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0 mt-2" aria-labelledby="userDropdown">
+              <a class="dropdown-item py-2" href="{% url 'core:order-list' %}">
+                <i class="fas fa-clipboard-list text-primary mr-2"></i>我的订单
+              </a>
+              <a class="dropdown-item py-2" href="{% url 'core:order-summary' %}">
+                <i class="fas fa-shopping-cart text-primary mr-2"></i>购物车
+                <span class="badge badge-danger ml-1">{{ request.user|cart_item_count }}</span>
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item py-2 text-danger" href="{% url 'account_logout' %}">
+                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+              </a>
+            </div>
           </li>
           {% else %}
-          <li class="nav-item">
-            <a class="nav-link waves-effect" href="{% url 'account_login' %}">
-              <span class="clearfix d-none d-sm-inline-block"> Login </span>
+          <!-- 未登录状态 -->
+          <li class="nav-item mr-2">
+            <a class="nav-link waves-effect btn btn-outline-primary btn-sm px-4 py-2 rounded-pill" 
+               href="{% url 'account_login' %}">
+              <i class="fas fa-sign-in-alt mr-1"></i>
+              <span class="font-weight-bold">登录</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link waves-effect" href="{% url 'account_signup' %}">
-              <span class="clearfix d-none d-sm-inline-block"> Signup </span>
+            <a class="nav-link waves-effect btn btn-primary btn-sm px-4 py-2 rounded-pill" 
+               href="{% url 'account_signup' %}">
+              <i class="fas fa-user-plus mr-1"></i>
+              <span class="font-weight-bold">注册</span>
             </a>
           </li>
           {% endif %}
@@ -62,3 +96,72 @@
 
     </div>
   </nav>
+
+  <style>
+    .navbar {
+      padding: 0.75rem 0;
+    }
+    .navbar-brand {
+      font-size: 1.5rem;
+    }
+    .nav-link {
+      transition: all 0.3s ease;
+      border-radius: 20px;
+    }
+    .nav-link:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+    .dropdown-menu {
+      border-radius: 12px;
+      min-width: 200px;
+    }
+    .dropdown-item {
+      transition: all 0.2s ease;
+      border-radius: 6px;
+      margin: 2px 8px;
+      width: auto;
+    }
+    .dropdown-item:hover {
+      background-color: #f8f9fa;
+      transform: translateX(3px);
+    }
+    .user-avatar {
+      font-weight: bold;
+    }
+    .badge {
+      transition: all 0.3s ease;
+    }
+    .nav-link:hover .badge {
+      transform: scale(1.1);
+    }
+    @media (max-width: 991px) {
+      .navbar-nav {
+        padding-top: 1rem;
+      }
+      .nav-item {
+        margin-bottom: 0.5rem;
+      }
+      .dropdown-menu {
+        border: none;
+        box-shadow: none !important;
+        background-color: transparent;
+      }
+    }
+  </style>
+
+  <script>
+    $(document).ready(function() {
+      // 购物车图标动画
+      $('.fa-shopping-cart').closest('a').on('mouseenter', function() {
+        $(this).find('.fa-shopping-cart').addClass('fa-bounce');
+      }).on('mouseleave', function() {
+        $(this).find('.fa-shopping-cart').removeClass('fa-bounce');
+      });
+
+      // 下拉菜单动画
+      $('.dropdown').on('show.bs.dropdown', function() {
+        $(this).find('.dropdown-menu').hide().fadeIn(200);
+      });
+    });
+  </script>
+</nav>
