@@ -14,6 +14,7 @@ from django.views.generic import ListView, DetailView, View
 
 from .forms import CheckoutForm, CouponForm, RefundForm, PaymentForm
 from .models import Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile
+from django.utils import timezone
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -289,12 +290,17 @@ class PaymentView(View):
 
                 order_items = order.items.all()
                 order_items.update(ordered=True)
-                for item in order_items:
+                for order_item in order_items:
+                    order_item.save()
+                    # 减少库存
+                    item = order_item.item
+                    item.stock -= order_item.quantity
                     item.save()
 
                 order.ordered = True
                 order.payment = payment
                 order.ref_code = create_ref_code()
+                order.status = 'pending'
                 order.save()
 
                 messages.success(self.request, "Your order was successful!")
@@ -343,6 +349,52 @@ class PaymentView(View):
 
         messages.warning(self.request, "Invalid data received")
         return redirect("/payment/stripe/")
+
+
+class OrderDetailView(LoginRequiredMixin, View):
+    def get(self, request, ref_code, *args, **kwargs):
+        try:
+            order = Order.objects.get(ref_code=ref_code, user=request.user)
+            context = {
+                'order': order,
+                'can_cancel': order.can_cancel()
+            }
+            return render(request, 'order_detail.html', context)
+        except ObjectDoesNotExist:
+            messages.warning(request, "订单不存在")
+            return redirect("/")
+
+
+class OrderListView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        orders = Order.objects.filter(user=request.user, ordered=True).order_by('-ordered_date')
+        context = {
+            'orders': orders
+        }
+        return render(request, 'order_list.html', context)
+
+
+@login_required
+def cancel_order(request, ref_code):
+    try:
+        order = Order.objects.get(ref_code=ref_code, user=request.user)
+        if order.can_cancel():
+            order.cancelled = True
+            order.status = 'cancelled'
+            order.cancelled_at = timezone.now()
+            order.save()
+
+            for order_item in order.items.all():
+                item = order_item.item
+                item.stock += order_item.quantity
+                item.save()
+
+            messages.success(request, "订单已成功取消")
+        else:
+            messages.warning(request, "该订单无法取消")
+    except ObjectDoesNotExist:
+        messages.warning(request, "订单不存在")
+    return redirect("core:order-list")
 
 
 class HomeView(ListView):
