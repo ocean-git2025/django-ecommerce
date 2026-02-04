@@ -1,3 +1,15 @@
+"""
+核心模型模块
+
+兼容性说明：
+- Django 版本: 2.2.14
+- 注意: django-allauth 最新版本与 Django 2.2 存在兼容性问题
+  错误: AttributeError: module 'django.db.models' has no attribute 'JSONField'
+  原因: django-allauth 使用了 Django 3.1+ 才支持的 JSONField
+  建议: 如需使用 django-allauth，请降级到兼容版本，如 django-allauth==0.44.0
+  或升级 Django 到 3.1+ 版本
+"""
+
 from django.db.models.signals import post_save
 from django.conf import settings
 from django.db import models
@@ -7,9 +19,9 @@ from django_countries.fields import CountryField
 
 
 CATEGORY_CHOICES = (
-    ('S', 'Shirt'),
-    ('SW', 'Sport wear'),
-    ('OW', 'Outwear')
+    ('C', '服装'),
+    ('A', '配饰'),
+    ('D', '数码')
 )
 
 LABEL_CHOICES = (

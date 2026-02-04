@@ -4,51 +4,126 @@
   <main>
     <div class="container">
 
-      <!--Navbar-->
-      <nav class="navbar navbar-expand-lg navbar-dark mdb-color lighten-3 mt-3 mb-5">
-
-        <!-- Navbar brand -->
-        <span class="navbar-brand">Categories:</span>
-
-        <!-- Collapse button -->
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#basicExampleNav"
-          aria-controls="basicExampleNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <!-- Collapsible content -->
-        <div class="collapse navbar-collapse" id="basicExampleNav">
-
-          <!-- Links -->
-          <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="#">All
-                <span class="sr-only">(current)</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Shirts</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Sport wears</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Outwears</a>
-            </li>
-
-          </ul>
-          <!-- Links -->
-
-          <form class="form-inline">
-            <div class="md-form my-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-            </div>
+      <!--Filter Bar-->
+      <div class="category-filter-bar mt-4 mb-5">
+        <div class="filter-container">
+          <label for="category-select" class="filter-label">
+            <i class="fas fa-filter mr-2"></i>商品分类
+          </label>
+          <form method="get" class="filter-form" id="category-form">
+            <select name="category" id="category-select" class="category-select" onchange="this.form.submit()">
+              <option value="" {% if not current_category %}selected{% endif %}>全部商品</option>
+              <option value="C" {% if current_category == 'C' %}selected{% endif %}>服装</option>
+              <option value="A" {% if current_category == 'A' %}selected{% endif %}>配饰</option>
+              <option value="D" {% if current_category == 'D' %}selected{% endif %}>数码</option>
+            </select>
           </form>
+          {% if current_category %}
+            <span class="filter-badge">
+              已筛选: 
+              {% if current_category == 'C' %}服装{% endif %}
+              {% if current_category == 'A' %}配饰{% endif %}
+              {% if current_category == 'D' %}数码{% endif %}
+              <a href="{% url 'core:home' %}" class="clear-filter" title="清除筛选">
+                <i class="fas fa-times"></i>
+              </a>
+            </span>
+          {% endif %}
         </div>
-        <!-- Collapsible content -->
+      </div>
+      <!--/.Filter Bar-->
 
-      </nav>
-      <!--/.Navbar-->
+      <style>
+        .category-filter-bar {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          padding: 20px 28px;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .filter-container {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        .filter-label {
+          color: #fff;
+          font-size: 1.1rem;
+          font-weight: 600;
+          margin: 0;
+          display: flex;
+          align-items: center;
+        }
+        .filter-form {
+          margin: 0;
+        }
+        .category-select {
+          background-color: rgba(255, 255, 255, 0.95);
+          border: 2px solid transparent;
+          border-radius: 8px;
+          padding: 10px 40px 10px 16px;
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: #333;
+          min-width: 160px;
+          cursor: pointer;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 14px center;
+          transition: all 0.2s ease;
+        }
+        .category-select:hover {
+          background-color: #fff;
+          border-color: rgba(255, 255, 255, 0.5);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .category-select:focus {
+          outline: none;
+          border-color: #fff;
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        .filter-badge {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: #fff;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .clear-filter {
+          color: #fff;
+          text-decoration: none;
+          width: 22px;
+          height: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background-color: rgba(255, 255, 255, 0.25);
+          transition: all 0.2s ease;
+        }
+        .clear-filter:hover {
+          background-color: rgba(255, 255, 255, 0.4);
+          color: #fff;
+          text-decoration: none;
+        }
+        @media (max-width: 576px) {
+          .category-filter-bar {
+            padding: 16px 20px;
+          }
+          .filter-container {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .category-select {
+            width: 100%;
+          }
+        }
+      </style>
 
       <!--Section: Products v.3-->
       <section class="text-center mb-4">
