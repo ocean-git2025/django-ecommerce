@@ -8,7 +8,7 @@
       <nav class="navbar navbar-expand-lg navbar-dark mdb-color lighten-3 mt-3 mb-5">
 
         <!-- Navbar brand -->
-        <span class="navbar-brand">Categories:</span>
+        <span class="navbar-brand">商品分类:</span>
 
         <!-- Collapse button -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#basicExampleNav"
@@ -19,31 +19,16 @@
         <!-- Collapsible content -->
         <div class="collapse navbar-collapse" id="basicExampleNav">
 
-          <!-- Links -->
-          <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="#">All
-                <span class="sr-only">(current)</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Shirts</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Sport wears</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Outwears</a>
-            </li>
-
-          </ul>
-          <!-- Links -->
-
-          <form class="form-inline">
-            <div class="md-form my-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-            </div>
+          <!-- Category Filter Form -->
+          <form class="form-inline" method="get" id="categoryForm">
+            <select class="form-control mr-sm-2" name="category" id="categorySelect" onchange="this.form.submit()">
+              <option value="all" {% if current_category == 'all' or not current_category %}selected{% endif %}>全部分类</option>
+              <option value="CLOTHING" {% if current_category == 'CLOTHING' %}selected{% endif %}>服装</option>
+              <option value="ACCESSORY" {% if current_category == 'ACCESSORY' %}selected{% endif %}>配饰</option>
+              <option value="DIGITAL" {% if current_category == 'DIGITAL' %}selected{% endif %}>数码</option>
+            </select>
           </form>
+
         </div>
         <!-- Collapsible content -->
 
@@ -102,14 +87,13 @@
       <!--Section: Products v.3-->
 
       <!--Pagination-->
-
       {% if is_paginated %}
       <nav class="d-flex justify-content-center wow fadeIn">
         <ul class="pagination pg-blue">
 
           {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_category and current_category != 'all' %}&category={{ current_category }}{% endif %}" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
               <span class="sr-only">Previous</span>
             </a>
@@ -117,19 +101,20 @@
           {% endif %}
 
           <li class="page-item active">
-            <a class="page-link" href="?page={{ page_obj.number }}">{{ page_obj.number }}
+            <a class="page-link" href="?page={{ page_obj.number }}{% if current_category and current_category != 'all' %}&category={{ current_category }}{% endif %}">{{ page_obj.number }}
               <span class="sr-only">(current)</span>
             </a>
           </li>
 
           {% if page_obj.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_category and current_category != 'all' %}&category={{ current_category }}{% endif %}" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>
               <span class="sr-only">Next</span>
             </a>
           </li>
           {% endif %}
+
         </ul>
       </nav>
       {% endif %}
