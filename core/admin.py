@@ -10,6 +10,12 @@ def make_refund_accepted(modeladmin, request, queryset):
 make_refund_accepted.short_description = 'Update orders to refund granted'
 
 
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ['title', 'price', 'category', 'label']
+    list_filter = ['category']
+    search_fields = ['title', 'description']
+
+
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['user',
                     'ordered',
@@ -55,7 +61,7 @@ class AddressAdmin(admin.ModelAdmin):
     search_fields = ['user', 'street_address', 'apartment_address', 'zip']
 
 
-admin.site.register(Item)
+admin.site.register(Item, ItemAdmin)
 admin.site.register(OrderItem)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Payment)
