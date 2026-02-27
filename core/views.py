@@ -289,12 +289,18 @@ class PaymentView(View):
 
                 order_items = order.items.all()
                 order_items.update(ordered=True)
-                for item in order_items:
+                for order_item in order_items:
+                    order_item.save()
+                    item = order_item.item
+                    item.stock -= order_item.quantity
+                    if item.stock < 0:
+                        item.stock = 0
                     item.save()
 
                 order.ordered = True
                 order.payment = payment
                 order.ref_code = create_ref_code()
+                order.status = 'PENDING'
                 order.save()
 
                 messages.success(self.request, "Your order was successful!")
@@ -517,3 +523,51 @@ class RequestRefundView(View):
             except ObjectDoesNotExist:
                 messages.info(self.request, "This order does not exist.")
                 return redirect("core:request-refund")
+
+
+class OrderHistoryView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = "order_history.html"
+    context_object_name = "orders"
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Order.objects.filter(
+            user=self.request.user,
+            ordered=True
+        ).order_by('-ordered_date')
+
+
+class OrderDetailView(LoginRequiredMixin, DetailView):
+    model = Order
+    template_name = "order_detail.html"
+    context_object_name = "order"
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+
+    def get_object(self, queryset=None):
+        obj = get_object_or_404(Order, pk=self.kwargs.get('pk'), user=self.request.user)
+        return obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_cancel'] = self.object.can_be_cancelled()
+        return context
+
+
+@login_required
+def cancel_order(request, pk):
+    order = get_object_or_404(Order, pk=pk, user=request.user)
+    if order.can_be_cancelled():
+        order.status = 'CANCELLED'
+        order.cancelled = True
+        order.save()
+        for order_item in order.items.all():
+            item = order_item.item
+            item.stock += order_item.quantity
+            item.save()
+        messages.success(request, "订单已成功取消！库存已恢复。")
+    else:
+        messages.warning(request, "该订单无法取消。")
+    return redirect("core:order-detail", pk=pk)
