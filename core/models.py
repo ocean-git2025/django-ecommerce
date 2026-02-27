@@ -23,6 +23,14 @@ ADDRESS_CHOICES = (
     ('S', 'Shipping'),
 )
 
+ORDER_STATUS_CHOICES = (
+    ('PENDING', '待处理'),
+    ('SHIPPED', '已发货'),
+    ('DELIVERING', '配送中'),
+    ('COMPLETED', '已完成'),
+    ('CANCELLED', '已取消'),
+)
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -43,9 +51,14 @@ class Item(models.Model):
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField()
+    stock = models.IntegerField(default=50)
+    stock_threshold = models.IntegerField(default=10)
 
     def __str__(self):
         return self.title
+
+    def is_low_stock(self):
+        return self.stock <= self.stock_threshold
 
     def get_absolute_url(self):
         return reverse("core:product", kwargs={
@@ -108,6 +121,12 @@ class Order(models.Model):
     received = models.BooleanField(default=False)
     refund_requested = models.BooleanField(default=False)
     refund_granted = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=ORDER_STATUS_CHOICES,
+        default='PENDING'
+    )
+    cancelled = models.BooleanField(default=False)
 
     '''
     1. Item added to cart
@@ -121,7 +140,7 @@ class Order(models.Model):
     '''
 
     def __str__(self):
-        return self.user.username
+        return f"{self.ref_code} - {self.user.username}"
 
     def get_total(self):
         total = 0
@@ -130,6 +149,12 @@ class Order(models.Model):
         if self.coupon:
             total -= self.coupon.amount
         return total
+
+    def get_status_display_cn(self):
+        return dict(ORDER_STATUS_CHOICES).get(self.status, self.status)
+
+    def can_be_cancelled(self):
+        return self.status == 'PENDING' and not self.cancelled
 
 
 class Address(models.Model):
